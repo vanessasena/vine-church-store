@@ -25,10 +25,10 @@ export default function OrdersPage() {
         fetch('/api/items'),
         fetch('/api/orders'),
       ]);
-      
+
       const itemsData = await itemsRes.json();
       const ordersData = await ordersRes.json();
-      
+
       setItems(itemsData);
       setOrders(ordersData);
     } catch (error) {
@@ -40,9 +40,9 @@ export default function OrdersPage() {
 
   const addToCart = (item: Item) => {
     const existingItem = cart.find(i => i.id === item.id);
-    
+
     if (existingItem) {
-      setCart(cart.map(i => 
+      setCart(cart.map(i =>
         i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
       ));
     } else {
@@ -54,7 +54,7 @@ export default function OrdersPage() {
     if (quantity <= 0) {
       setCart(cart.filter(i => i.id !== itemId));
     } else {
-      setCart(cart.map(i => 
+      setCart(cart.map(i =>
         i.id === itemId ? { ...i, quantity } : i
       ));
     }
@@ -66,7 +66,7 @@ export default function OrdersPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (cart.length === 0) {
       alert('Please add items to the cart');
       return;
@@ -78,6 +78,7 @@ export default function OrdersPage() {
         items: cart.map(item => ({
           id: item.id,
           quantity: item.quantity,
+          name: item.name,
           price: item.price,
         })),
       };
@@ -296,7 +297,7 @@ export default function OrdersPage() {
                       <ul className="text-sm text-gray-700">
                         {order.order_items.map((orderItem) => (
                           <li key={orderItem.id}>
-                            {orderItem.quantity}x {orderItem.item?.name || 'Unknown Item'} - 
+                            {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'} -
                             ${(orderItem.price_at_time * orderItem.quantity).toFixed(2)}
                           </li>
                         ))}

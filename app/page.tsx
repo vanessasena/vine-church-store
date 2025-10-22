@@ -4,10 +4,10 @@ export default function Home() {
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Vine Church Cafeteria
+            Vine Church Orders Management
           </h1>
           <p className="text-xl text-gray-600">
-            Cafeteria Management System
+            Manage orders efficiently for Vine Church
           </p>
         </div>
 
@@ -21,7 +21,7 @@ export default function Home() {
               Items Management
             </h2>
             <p className="text-gray-600">
-              Register and manage cafeteria items with categories and prices
+              Register and manage items with categories and prices
             </p>
             <div className="mt-4 text-blue-600 font-medium group-hover:translate-x-2 transition-transform inline-block">
               Manage Items →
@@ -45,27 +45,6 @@ export default function Home() {
           </a>
         </div>
 
-        <div className="mt-12 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Quick Setup Guide</h3>
-          <ol className="space-y-2 text-gray-700">
-            <li className="flex items-start">
-              <span className="font-bold mr-2">1.</span>
-              <span>Create a <code className="bg-gray-100 px-2 py-1 rounded text-sm">.env</code> file based on <code className="bg-gray-100 px-2 py-1 rounded text-sm">.env.example</code></span>
-            </li>
-            <li className="flex items-start">
-              <span className="font-bold mr-2">2.</span>
-              <span>Add your Supabase credentials to the <code className="bg-gray-100 px-2 py-1 rounded text-sm">.env</code> file</span>
-            </li>
-            <li className="flex items-start">
-              <span className="font-bold mr-2">3.</span>
-              <span>Run the database setup script (see README.md)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="font-bold mr-2">4.</span>
-              <span>Start managing your cafeteria!</span>
-            </li>
-          </ol>
-        </div>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ export default function ItemsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const itemData = {
       name: formData.name,
       category: formData.category,
@@ -41,7 +41,7 @@ export default function ItemsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...itemData, id: editingId }),
         });
-        
+
         if (response.ok) {
           setEditingId(null);
         }
@@ -52,7 +52,7 @@ export default function ItemsPage() {
           body: JSON.stringify(itemData),
         });
       }
-      
+
       setFormData({ name: '', category: '', price: '' });
       fetchItems();
     } catch (error) {
@@ -100,7 +100,7 @@ export default function ItemsPage() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Items Management</h1>
-          <p className="text-gray-600">Register and manage cafeteria items</p>
+          <p className="text-gray-600">Register and manage items</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -124,7 +124,7 @@ export default function ItemsPage() {
                     placeholder="e.g., Coffee"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
@@ -138,7 +138,7 @@ export default function ItemsPage() {
                     placeholder="e.g., Beverages"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Price ($)
@@ -153,7 +153,7 @@ export default function ItemsPage() {
                     placeholder="0.00"
                   />
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     type="submit"

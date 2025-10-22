@@ -26,6 +26,7 @@ CREATE TABLE order_items (
   item_id UUID REFERENCES items(id),
   quantity INTEGER NOT NULL,
   price_at_time DECIMAL(10, 2) NOT NULL,
+  item_name_at_time TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -34,14 +35,6 @@ CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_item_id ON order_items(item_id);
 CREATE INDEX idx_orders_created_at ON orders(created_at);
 CREATE INDEX idx_items_category ON items(category);
-
--- Insert sample data (optional)
-INSERT INTO items (name, category, price) VALUES
-  ('Coffee', 'Beverages', 2.50),
-  ('Tea', 'Beverages', 2.00),
-  ('Sandwich', 'Food', 5.00),
-  ('Muffin', 'Food', 3.50),
-  ('Water', 'Beverages', 1.00);
 
 -- Enable Row Level Security (RLS) - Optional but recommended
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;

@@ -12,6 +12,7 @@ export interface OrderItem {
   item_id: string;
   quantity: number;
   price_at_time: number;
+  item_name_at_time: string;
   item?: Item;
 }
 
