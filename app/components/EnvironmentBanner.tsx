@@ -8,8 +8,10 @@ export default function EnvironmentBanner() {
 
   useEffect(() => {
     // Check environment from env variable first, then fallback to detection
-    const envFromConfig = process.env.NEXT_PUBLIC_APP_ENV || process.env.VERCEL_ENV;
+    const envFromConfig = process.env.VERCEL_ENV;
     const isDev = process.env.NODE_ENV === 'development';
+
+    console.log('Detected environment from config:', envFromConfig);
 
     if (envFromConfig && envFromConfig !== 'production') {
       setEnvironment(envFromConfig);
