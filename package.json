@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:staging": "set NEXT_PUBLIC_APP_ENV=staging && next dev",
     "build": "next build",
+    "build:staging": "set NEXT_PUBLIC_APP_ENV=staging && next build",
     "start": "next start"
   },
   "dependencies": {

@@ -147,6 +147,38 @@ vine-church-store/
 6. Click "Create Order" to submit
 7. Mark orders as paid/unpaid from the order history
 
+## Environment Banner
+
+The application includes an environment banner to help identify development and staging environments:
+
+- **Development Environment**: Yellow banner with 🚧 icon
+- **Staging Environment**: Orange banner with 🔧 icon
+- **Production Environment**: No banner displayed
+
+### Configuration
+
+Set the environment using the `NEXT_PUBLIC_APP_ENV` variable:
+
+```bash
+# .env.local
+NEXT_PUBLIC_APP_ENV=staging
+```
+
+Or use the predefined scripts:
+
+```bash
+# Run in staging mode
+npm run dev:staging
+
+# Build for staging
+npm run build:staging
+```
+
+The banner can be dismissed by clicking the × button and will automatically detect:
+- Development mode (`NODE_ENV=development`)
+- Staging environments (Vercel, Netlify, or custom staging domains)
+- Production environments (automatically hidden)
+
 ## Building for Production
 
 ```bash
