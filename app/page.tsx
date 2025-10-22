@@ -3,6 +3,13 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-8">
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/vine-church-logo.svg"
+              alt="Vine Church Logo"
+              className="w-24 h-24"
+            />
+          </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
             Vine Church Orders Management
           </h1>
