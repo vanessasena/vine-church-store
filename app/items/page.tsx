@@ -99,8 +99,17 @@ export default function ItemsPage() {
     <div className="min-h-screen p-8 bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Items Management</h1>
-          <p className="text-gray-600">Register and manage items</p>
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src="/vine-church-logo.svg"
+              alt="Vine Church Logo"
+              className="w-12 h-12"
+            />
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Items Management</h1>
+              <p className="text-gray-600">Register and manage items</p>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
