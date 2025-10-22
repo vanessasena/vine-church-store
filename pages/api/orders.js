@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     case 'POST':
       try {
         const { customer_name, items } = req.body;
-        
+
         if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -48,6 +48,7 @@ export default async function handler(req, res) {
           order_id: orderData.id,
           item_id: item.id,
           quantity: item.quantity,
+          item_name_at_time: item.name,
           price_at_time: item.price
         }));
 
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
     case 'PUT':
       try {
         const { id, is_paid } = req.body;
-        
+
         if (!id || is_paid === undefined) {
           return res.status(400).json({ error: 'Order ID and payment status are required' });
         }
@@ -101,7 +102,7 @@ export default async function handler(req, res) {
     case 'DELETE':
       try {
         const { id } = req.query;
-        
+
         if (!id) {
           return res.status(400).json({ error: 'Order ID is required' });
         }
