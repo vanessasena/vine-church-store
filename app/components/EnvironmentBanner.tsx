@@ -11,20 +11,10 @@ export default function EnvironmentBanner() {
     const envFromConfig = process.env.NEXT_PUBLIC_APP_ENV || process.env.VERCEL_ENV;
     const isDev = process.env.NODE_ENV === 'development';
 
-    console.log('Detected environment from config:', envFromConfig);
-
     if (envFromConfig && envFromConfig !== 'production') {
       setEnvironment(envFromConfig);
     } else if (isDev) {
       setEnvironment('development');
-    } else if (typeof window !== 'undefined') {
-      // Auto-detect staging environment (only on client side)
-      const hostname = window.location.hostname;
-      const isStaging = hostname.includes('staging');
-
-      if (isStaging) {
-        setEnvironment('staging');
-      }
     }
   }, []);
 
