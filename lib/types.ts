@@ -13,6 +13,7 @@ export interface OrderItem {
   quantity: number;
   price_at_time: number;
   item_name_at_time: string;
+  item_category_at_time?: string;
   item?: Item;
 }
 

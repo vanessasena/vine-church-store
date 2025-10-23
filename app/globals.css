@@ -24,3 +24,40 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Override dark mode for specific components to maintain fixed colors */
+.fixed-colors {
+  color: #1e293b !important; /* slate-800 */
+}
+
+.fixed-colors h1 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+.fixed-colors h2 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+.fixed-colors h3 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+.fixed-colors p {
+  color: #334155 !important; /* slate-700 */
+}
+
+/* Environment Banner fixed colors */
+.env-banner-development {
+  background-color: #eab308 !important; /* yellow-500 */
+  color: #422006 !important; /* yellow-950 */
+}
+
+.env-banner-staging {
+  background-color: #f97316 !important; /* orange-500 */
+  color: #431407 !important; /* orange-950 */
+}
+
+.env-banner-preview {
+  background-color: #3b82f6 !important; /* blue-500 */
+  color: #172554 !important; /* blue-950 */
+}

@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-purple-50 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-purple-50 flex items-center justify-center p-8 fixed-colors">
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
@@ -10,10 +10,10 @@ export default function Home() {
               className="w-24 h-24"
             />
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-5xl font-bold text-slate-900 mb-4">
             Vine Church Orders Management
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-slate-700">
             Manage orders efficiently for Vine Church
           </p>
         </div>
@@ -24,10 +24,10 @@ export default function Home() {
             className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer group"
           >
             <div className="text-4xl mb-4">📦</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
               Items Management
             </h2>
-            <p className="text-gray-600">
+            <p className="text-slate-700">
               Register and manage items with categories and prices
             </p>
             <div className="mt-4 text-blue-600 font-medium group-hover:translate-x-2 transition-transform inline-block">
@@ -40,10 +40,10 @@ export default function Home() {
             className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer group"
           >
             <div className="text-4xl mb-4">🛒</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-purple-600 transition-colors">
               Orders Management
             </h2>
-            <p className="text-gray-600">
+            <p className="text-slate-700">
               Create orders, track total costs, and manage payment status
             </p>
             <div className="mt-4 text-purple-600 font-medium group-hover:translate-x-2 transition-transform inline-block">

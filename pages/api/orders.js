@@ -46,9 +46,10 @@ export default async function handler(req, res) {
         // Create order items
         const orderItems = items.map(item => ({
           order_id: orderData.id,
-          item_id: item.id,
+          item_id: item.id || null, // Allow null for custom items
           quantity: item.quantity,
           item_name_at_time: item.name,
+          item_category_at_time: item.category || 'Unknown',
           price_at_time: item.price
         }));
 

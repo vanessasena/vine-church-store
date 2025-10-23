@@ -8,10 +8,11 @@ export default function EnvironmentBanner() {
 
   useEffect(() => {
     // Check environment from env variable first, then fallback to detection
-    const envFromConfig = process.env.VERCEL_ENV;
+    const envFromConfig = process.env.NEXT_PUBLIC_APP_ENV;
     const isDev = process.env.NODE_ENV === 'development';
 
     console.log('Detected environment from config:', envFromConfig);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
 
     if (envFromConfig && envFromConfig !== 'production') {
       setEnvironment(envFromConfig);
@@ -27,22 +28,19 @@ export default function EnvironmentBanner() {
       case 'development':
         return {
           text: '🚧 Development Environment',
-          bgColor: 'bg-yellow-500',
-          textColor: 'text-yellow-900',
+          cssClass: 'env-banner-development',
           description: 'You are viewing the development version of this application'
         };
       case 'preview':
         return {
           text: '🔍 Preview Environment',
-          bgColor: 'bg-blue-500',
-          textColor: 'text-blue-900',
+          cssClass: 'env-banner-preview',
           description: 'You are viewing the preview version of this application'
         };
       case 'staging':
         return {
           text: '🔧 Staging Environment',
-          bgColor: 'bg-orange-500',
-          textColor: 'text-orange-900',
+          cssClass: 'env-banner-staging',
           description: 'You are viewing the staging branch - changes pending production release'
         };
       default:
@@ -56,7 +54,7 @@ export default function EnvironmentBanner() {
   if (isDismissed) return null;
 
   return (
-    <div className={`${config.bgColor} ${config.textColor} px-4 py-2 text-center text-sm font-medium relative`}>
+    <div className={`${config.cssClass} px-4 py-2 text-center text-sm font-medium relative`}>
       <div className="flex items-center justify-center gap-2">
         <span>{config.text}</span>
         <span className="hidden sm:inline">- {config.description}</span>
