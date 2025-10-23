@@ -27,6 +27,7 @@ CREATE TABLE order_items (
   quantity INTEGER NOT NULL,
   price_at_time DECIMAL(10, 2) NOT NULL,
   item_name_at_time TEXT NOT NULL,
+  item_category_at_time TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

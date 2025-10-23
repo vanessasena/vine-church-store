@@ -112,6 +112,7 @@ export default function OrdersPage() {
           id: item.isCustom ? null : item.id, // Custom items don't have database IDs
           quantity: item.quantity,
           name: item.name,
+          category: item.category,
           price: item.isCustom ? item.customPrice! : item.price,
         })),
       };
@@ -331,13 +332,13 @@ export default function OrdersPage() {
                       return (
                         <div key={item.id} className="flex justify-between items-center mb-2">
                           <div className="flex-1">
-                            <span className="font-medium">{item.name}</span>
-                            {item.isCustom && (
-                              <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs ml-2">
-                                Custom
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{item.name}</span>
+                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                {item.category}
                               </span>
-                            )}
-                            <span className="text-sm text-gray-600 ml-2">${displayPrice.toFixed(2)}</span>
+                            </div>
+                            <span className="text-sm text-gray-600">${displayPrice.toFixed(2)}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
@@ -436,9 +437,20 @@ export default function OrdersPage() {
                       <h4 className="text-sm font-semibold mb-1">Items:</h4>
                       <ul className="text-sm text-gray-700">
                         {order.order_items.map((orderItem) => (
-                          <li key={orderItem.id}>
-                            {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'} -
-                            ${(orderItem.price_at_time * orderItem.quantity).toFixed(2)}
+                          <li key={orderItem.id} className="flex items-center justify-between py-1">
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'}
+                              </span>
+                              {orderItem.item_category_at_time && (
+                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                  {orderItem.item_category_at_time}
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-medium">
+                              ${(orderItem.price_at_time * orderItem.quantity).toFixed(2)}
+                            </span>
                           </li>
                         ))}
                       </ul>
