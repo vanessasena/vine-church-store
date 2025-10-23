@@ -22,6 +22,7 @@ export interface Order {
   customer_name: string;
   total_cost: number;
   is_paid: boolean;
+  payment_type?: string | null;
   created_at: string;
   order_items?: OrderItem[];
 }

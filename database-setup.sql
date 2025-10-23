@@ -16,6 +16,7 @@ CREATE TABLE orders (
   customer_name TEXT NOT NULL,
   total_cost DECIMAL(10, 2) NOT NULL,
   is_paid BOOLEAN DEFAULT FALSE,
+  payment_type TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -46,3 +47,7 @@ ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations on items" ON items FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on orders" ON orders FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on order_items" ON order_items FOR ALL USING (true) WITH CHECK (true);
+
+-- Migration: Add payment_type column to existing orders table
+-- Run this if your orders table already exists
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_type TEXT;

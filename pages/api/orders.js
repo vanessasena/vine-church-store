@@ -81,15 +81,29 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, is_paid } = req.body;
+        const { id, is_paid, payment_type } = req.body;
 
         if (!id || is_paid === undefined) {
           return res.status(400).json({ error: 'Order ID and payment status are required' });
         }
 
+        // If marking as paid, payment_type is required
+        if (is_paid && !payment_type) {
+          return res.status(400).json({ error: 'Payment type is required when marking as paid' });
+        }
+
+        // Prepare update object
+        const updateData = { is_paid };
+        if (is_paid) {
+          updateData.payment_type = payment_type;
+        } else {
+          // Clear payment_type when marking as unpaid
+          updateData.payment_type = null;
+        }
+
         const { data, error } = await supabase
           .from('orders')
-          .update({ is_paid })
+          .update(updateData)
           .eq('id', id)
           .select()
           .single();
