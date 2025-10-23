@@ -17,6 +17,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [showCustomItemForm, setShowCustomItemForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [customItemForm, setCustomItemForm] = useState({
     name: '',
     category: '',
@@ -95,6 +96,18 @@ export default function OrdersPage() {
       const price = item.isCustom ? item.customPrice! : item.price;
       return sum + (price * item.quantity);
     }, 0);
+  };
+
+  const getUniqueCategories = () => {
+    const categories = items.map(item => item.category);
+    return Array.from(new Set(categories)).sort();
+  };
+
+  const getFilteredItems = () => {
+    if (!selectedCategory) {
+      return items;
+    }
+    return items.filter(item => item.category === selectedCategory);
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -302,8 +315,39 @@ export default function OrdersPage() {
                   </div>
                 )}
 
+                {items.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-gray-700">Filter by category:</span>
+                      {getUniqueCategories().map((category) => (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() => setSelectedCategory(category)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            selectedCategory === category
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                      {selectedCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategory('')}
+                          className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                        >
+                          Clear Filter
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {items.map((item) => (
+                  {getFilteredItems().map((item) => (
                     <button
                       key={item.id}
                       type="button"
@@ -316,6 +360,11 @@ export default function OrdersPage() {
                     </button>
                   ))}
                 </div>
+                {getFilteredItems().length === 0 && items.length > 0 && (
+                  <p className="text-gray-500 text-center py-4">
+                    No items found in this category.
+                  </p>
+                )}
                 {items.length === 0 && (
                   <p className="text-gray-500 text-center py-4">
                     No items available. Please add items first.
