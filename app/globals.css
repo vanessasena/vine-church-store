@@ -20,14 +20,20 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #ffffff !important; /* Force white background */
+  color: #111827 !important; /* Force dark text */
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Override any dark mode styles that might affect the entire page */
+* {
+  color-scheme: light !important;
 }
 
 /* Override dark mode for specific components to maintain fixed colors */
 .fixed-colors {
   color: #1e293b !important; /* slate-800 */
+  background-color: #ffffff !important; /* white background */
 }
 
 .fixed-colors h1 {
@@ -42,8 +48,260 @@ body {
   color: #0f172a !important; /* slate-900 */
 }
 
+.fixed-colors h4 {
+  color: #0f172a !important; /* slate-900 */
+}
+
 .fixed-colors p {
   color: #334155 !important; /* slate-700 */
+}
+
+.fixed-colors label {
+  color: #374151 !important; /* gray-700 */
+}
+
+.fixed-colors .text-gray-600 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+.fixed-colors .text-gray-700 {
+  color: #374151 !important; /* gray-700 */
+}
+
+.fixed-colors .text-gray-900 {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Force light background for content areas */
+.bg-gray-50 {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+.bg-white {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Fixed colors for specific elements that might be affected by dark mode */
+input, textarea, select {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Input placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important; /* gray-400 - lighter gray */
+  opacity: 1 !important;
+}
+
+/* Firefox specific placeholder styling */
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: #9ca3af !important; /* gray-400 */
+  opacity: 1 !important;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) placeholder styling */
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #9ca3af !important; /* gray-400 */
+  opacity: 1 !important;
+}
+
+/* Microsoft Edge placeholder styling */
+input::-ms-input-placeholder,
+textarea::-ms-input-placeholder {
+  color: #9ca3af !important; /* gray-400 */
+  opacity: 1 !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+table {
+  background-color: #ffffff !important;
+}
+
+table th {
+  color: #374151 !important; /* gray-700 */
+}
+
+table td {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Button text colors - preserve specific color classes */
+.text-blue-600 {
+  color: #2563eb !important;
+}
+
+.text-white {
+  color: #ffffff !important;
+}
+
+/* Ensure buttons with white text stay white */
+button.text-white,
+.bg-purple-600.text-white,
+.bg-green-600.text-white,
+.bg-blue-600.text-white,
+.bg-red-500.text-white,
+.bg-yellow-500.text-white {
+  color: #ffffff !important;
+}
+
+.text-blue-600:hover,
+.hover\:text-blue-800:hover {
+  color: #1e40af !important;
+}
+
+.text-red-600 {
+  color: #dc2626 !important;
+}
+
+.text-red-600:hover,
+.hover\:text-red-800:hover {
+  color: #991b1b !important;
+}
+
+.text-green-600 {
+  color: #16a34a !important;
+}
+
+.text-green-600:hover {
+  color: #15803d !important;
+}
+
+/* Additional green color variations */
+.text-green-500 {
+  color: #22c55e !important;
+}
+
+.text-green-700 {
+  color: #15803d !important;
+}
+
+.text-green-800 {
+  color: #166534 !important;
+}
+
+.text-purple-600 {
+  color: #9333ea !important;
+}
+
+.text-purple-600:hover {
+  color: #7c3aed !important;
+}
+
+/* Preserve link colors */
+a.text-blue-600 {
+  color: #2563eb !important;
+}
+
+a.text-blue-600:hover,
+a.hover\:text-blue-800:hover {
+  color: #1e40af !important;
+}
+
+/* Ensure text elements maintain fixed colors but allow color classes to override */
+.fixed-colors span:not([class*="text-"]):not([class*="bg-"]) {
+  color: inherit;
+}
+
+.fixed-colors .font-semibold,
+.fixed-colors .font-bold {
+  color: #0f172a !important; /* slate-900 */
+}
+
+/* Override font-semibold for colored text */
+.fixed-colors .font-semibold.text-green-600,
+.fixed-colors .font-bold.text-green-600 {
+  color: #16a34a !important;
+}
+
+.fixed-colors .font-semibold.text-blue-600,
+.fixed-colors .font-bold.text-blue-600 {
+  color: #2563eb !important;
+}
+
+.fixed-colors .font-semibold.text-red-600,
+.fixed-colors .font-bold.text-red-600 {
+  color: #dc2626 !important;
+}
+
+.fixed-colors .text-sm {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Override text-sm for buttons with white text */
+.fixed-colors button.text-white.text-sm,
+.fixed-colors .text-white.text-sm {
+  color: #ffffff !important;
+}
+
+/* Override for any element with colored background and white text */
+.fixed-colors .bg-purple-600,
+.fixed-colors .bg-green-600,
+.fixed-colors .bg-blue-600,
+.fixed-colors .bg-red-500,
+.fixed-colors .bg-yellow-500,
+.fixed-colors .bg-gray-400 {
+  color: #ffffff !important;
+}
+
+/* Preserve specific color text classes within fixed-colors */
+.fixed-colors .text-green-600 {
+  color: #16a34a !important;
+}
+
+.fixed-colors .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.fixed-colors .text-red-600 {
+  color: #dc2626 !important;
+}
+
+.fixed-colors .text-purple-600 {
+  color: #9333ea !important;
+}
+
+.fixed-colors .text-yellow-600 {
+  color: #ca8a04 !important;
+}
+
+/* Specific overrides for badges and small text */
+.fixed-colors .bg-blue-100 {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.fixed-colors .bg-purple-100 {
+  background-color: #ede9fe !important;
+  color: #7c3aed !important;
+}
+
+.fixed-colors .bg-green-100 {
+  background-color: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.fixed-colors .bg-red-100 {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+.fixed-colors .bg-yellow-100 {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+}
+
+/* Loading and other utility text */
+.fixed-colors .text-xl {
+  color: #111827 !important; /* gray-900 */
 }
 
 /* Environment Banner fixed colors */
