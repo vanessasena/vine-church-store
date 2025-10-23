@@ -18,7 +18,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <a
             href="/items"
             className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer group"
@@ -48,6 +48,22 @@ export default function Home() {
             </p>
             <div className="mt-4 text-purple-600 font-medium group-hover:translate-x-2 transition-transform inline-block">
               Manage Orders →
+            </div>
+          </a>
+
+          <a
+            href="/reports"
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer group"
+          >
+            <div className="text-4xl mb-4">📊</div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-green-600 transition-colors">
+              Sales Reports
+            </h2>
+            <p className="text-slate-700">
+              View analytics by date, category, and payment type
+            </p>
+            <div className="mt-4 text-green-600 font-medium group-hover:translate-x-2 transition-transform inline-block">
+              View Reports →
             </div>
           </a>
         </div>
