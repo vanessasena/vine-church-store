@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Item, Order } from '@/lib/types';
-import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 
 interface CartItem extends Omit<Item, 'category'> {
   quantity: number;
-  isCustom?: boolean;
   customPrice?: number;
   category?: string | Item['category']; // Allow both string and Category object, make optional
 }
@@ -18,14 +16,7 @@ export default function OrdersPage() {
   const [customerName, setCustomerName] = useState('');
   const [loading, setLoading] = useState(true);
   const [showNewOrder, setShowNewOrder] = useState(false);
-  const [showCustomItemForm, setShowCustomItemForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [customItemForm, setCustomItemForm] = useState({
-    name: '',
-    category: '',
-    price: '',
-    quantity: 1
-  });
   const [showPaymentTypeModal, setShowPaymentTypeModal] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<string | null>(null);
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
@@ -56,37 +47,15 @@ export default function OrdersPage() {
   };
 
   const addToCart = (item: Item) => {
-    const existingItem = cart.find(i => i.id === item.id && !i.isCustom);
+    const existingItem = cart.find(i => i.id === item.id);
 
     if (existingItem) {
       setCart(cart.map(i =>
-        i.id === item.id && !i.isCustom ? { ...i, quantity: i.quantity + 1 } : i
+        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
       ));
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
     }
-  };
-
-  const addCustomItemToCart = () => {
-    if (!customItemForm.name || !customItemForm.price) {
-      alert('Please fill in item name and price');
-      return;
-    }
-
-    const customItem: CartItem = {
-      id: `custom-${Date.now()}`, // Generate unique ID for custom items
-      name: customItemForm.name,
-      category_id: '', // Custom items don't have category_id
-      category: customItemForm.category || 'Custom',
-      price: parseFloat(customItemForm.price),
-      quantity: customItemForm.quantity,
-      isCustom: true,
-      customPrice: parseFloat(customItemForm.price)
-    };
-
-    setCart([...cart, customItem]);
-    setCustomItemForm({ name: '', category: '', price: '', quantity: 1 });
-    setShowCustomItemForm(false);
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
@@ -99,9 +68,15 @@ export default function OrdersPage() {
     }
   };
 
+  const updateCustomPrice = (itemId: string, price: number) => {
+    setCart(cart.map(i =>
+      i.id === itemId ? { ...i, customPrice: price } : i
+    ));
+  };
+
   const getTotalCost = () => {
     return cart.reduce((sum, item) => {
-      const price = item.isCustom ? item.customPrice! : item.price;
+      const price = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
       return sum + (price * item.quantity);
     }, 0);
   };
@@ -126,16 +101,23 @@ export default function OrdersPage() {
       return;
     }
 
+    // Validate that all custom price items have prices set
+    const missingPrices = cart.filter(item => item.has_custom_price && !item.customPrice);
+    if (missingPrices.length > 0) {
+      alert('Please set prices for all custom price items');
+      return;
+    }
+
     try {
       const orderData = {
         customer_name: customerName,
         items: cart.map(item => ({
-          id: item.isCustom ? null : item.id, // Custom items don't have database IDs
+          id: item.id,
           quantity: item.quantity,
           name: item.name,
           category: typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown',
           category_id: typeof item.category === 'string' ? null : item.category?.id,
-          price: item.isCustom ? item.customPrice! : item.price,
+          price: item.has_custom_price ? item.customPrice! : item.price!,
         })),
       };
 
@@ -149,8 +131,6 @@ export default function OrdersPage() {
         setCart([]);
         setCustomerName('');
         setShowNewOrder(false);
-        setShowCustomItemForm(false);
-        setCustomItemForm({ name: '', category: '', price: '', quantity: 1 });
         fetchData();
       }
     } catch (error) {
@@ -281,89 +261,7 @@ export default function OrdersPage() {
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold">Available Items</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomItemForm(!showCustomItemForm)}
-                    className="bg-purple-600 text-white py-1 px-3 rounded-md hover:bg-purple-700 transition-colors text-sm"
-                  >
-                    {showCustomItemForm ? 'Hide Custom Item' : '+ Custom Item'}
-                  </button>
                 </div>
-
-                {showCustomItemForm && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-md p-4 mb-4">
-                    <h4 className="font-semibold text-purple-800 mb-3">Add Custom Item</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-purple-700 mb-1">
-                          Item Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={customItemForm.name}
-                          onChange={(e) => setCustomItemForm({...customItemForm, name: e.target.value})}
-                          className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          placeholder="Enter item name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-purple-700 mb-1">
-                          Category
-                        </label>
-                        <CategoryAutocomplete
-                          value={customItemForm.category}
-                          onChange={(value) => setCustomItemForm({...customItemForm, category: value})}
-                          className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          placeholder="Custom"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-purple-700 mb-1">
-                          Price ($) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={customItemForm.price}
-                          onChange={(e) => setCustomItemForm({...customItemForm, price: e.target.value})}
-                          className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-purple-700 mb-1">
-                          Quantity
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={customItemForm.quantity}
-                          onChange={(e) => setCustomItemForm({...customItemForm, quantity: parseInt(e.target.value) || 1})}
-                          className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        type="button"
-                        onClick={addCustomItemToCart}
-                        className="bg-purple-600 text-white py-1 px-4 rounded text-sm hover:bg-purple-700 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomItemForm({ name: '', category: '', price: '', quantity: 1 });
-                          setShowCustomItemForm(false);
-                        }}
-                        className="bg-gray-300 text-gray-700 py-1 px-4 rounded text-sm hover:bg-gray-400 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {items.length > 0 && (
                   <div className="mb-4">
@@ -406,7 +304,13 @@ export default function OrdersPage() {
                     >
                       <div className="font-medium">{item.name}</div>
                       <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
-                      <div className="text-sm font-semibold text-green-600">${item.price.toFixed(2)}</div>
+                      <div className="text-sm font-semibold text-green-600">
+                        {item.has_custom_price ? (
+                          <span className="text-purple-600">Custom Price</span>
+                        ) : (
+                          `$${item.price?.toFixed(2) || '0.00'}`
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -427,37 +331,57 @@ export default function OrdersPage() {
                   <h3 className="text-lg font-semibold mb-2">Cart</h3>
                   <div className="bg-gray-50 rounded-md p-4">
                     {cart.map((item) => {
-                      const displayPrice = item.isCustom ? item.customPrice! : item.price;
+                      const displayPrice = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
                       return (
-                        <div key={item.id} className="flex justify-between items-center mb-2">
-                          <div className="flex-1">
+                        <div key={item.id} className="mb-3 pb-3 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{item.name}</span>
+                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                  {typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown'}
+                                </span>
+                              </div>
+                              {item.has_custom_price && (
+                                <div className="mt-2">
+                                  <label className="block text-xs font-medium text-purple-700 mb-1">
+                                    Set Price ($) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.customPrice || ''}
+                                    onChange={(e) => updateCustomPrice(item.id, parseFloat(e.target.value) || 0)}
+                                    className="w-32 px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              )}
+                              {!item.has_custom_price && (
+                                <span className="text-sm text-gray-600">${displayPrice.toFixed(2)}</span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{item.name}</span>
-                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                                {typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown'}
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
+                              >
+                                -
+                              </button>
+                              <span className="w-8 text-center">{item.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
+                              >
+                                +
+                              </button>
+                              <span className="ml-2 font-semibold w-20 text-right">
+                                ${(displayPrice * item.quantity).toFixed(2)}
                               </span>
                             </div>
-                            <span className="text-sm text-gray-600">${displayPrice.toFixed(2)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
-                            >
-                              -
-                            </button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
-                            >
-                              +
-                            </button>
-                            <span className="ml-2 font-semibold w-20 text-right">
-                              ${(displayPrice * item.quantity).toFixed(2)}
-                            </span>
                           </div>
                         </div>
                       );
@@ -486,8 +410,6 @@ export default function OrdersPage() {
                     setCart([]);
                     setCustomerName('');
                     setShowNewOrder(false);
-                    setShowCustomItemForm(false);
-                    setCustomItemForm({ name: '', category: '', price: '', quantity: 1 });
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
                 >
