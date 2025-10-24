@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Item, Order } from '@/lib/types';
+import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 
 interface CartItem extends Item {
   quantity: number;
@@ -24,6 +25,11 @@ export default function OrdersPage() {
     price: '',
     quantity: 1
   });
+  const [showPaymentTypeModal, setShowPaymentTypeModal] = useState(false);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<string | null>(null);
+  const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
+  const [showUnpaidConfirmation, setShowUnpaidConfirmation] = useState(false);
+  const [orderToMarkUnpaid, setOrderToMarkUnpaid] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -150,12 +156,54 @@ export default function OrdersPage() {
   };
 
   const togglePaymentStatus = async (orderId: string, currentStatus: boolean) => {
+    if (currentStatus) {
+      // Marking as unpaid - show confirmation dialog
+      setOrderToMarkUnpaid(orderId);
+      setShowUnpaidConfirmation(true);
+    } else {
+      // Marking as paid - show payment type modal
+      setSelectedOrderForPayment(orderId);
+      setShowPaymentTypeModal(true);
+    }
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!selectedPaymentType) {
+      alert('Please select a payment type');
+      return;
+    }
+
     try {
       await fetch('/api/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: orderId, is_paid: !currentStatus }),
+        body: JSON.stringify({ 
+          id: selectedOrderForPayment, 
+          is_paid: true,
+          payment_type: selectedPaymentType 
+        }),
       });
+      setShowPaymentTypeModal(false);
+      setSelectedOrderForPayment(null);
+      setSelectedPaymentType('');
+      fetchData();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+    }
+  };
+
+  const handleMarkAsUnpaid = async () => {
+    try {
+      await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: orderToMarkUnpaid, 
+          is_paid: false 
+        }),
+      });
+      setShowUnpaidConfirmation(false);
+      setOrderToMarkUnpaid(null);
       fetchData();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -259,10 +307,9 @@ export default function OrdersPage() {
                         <label className="block text-xs font-medium text-purple-700 mb-1">
                           Category
                         </label>
-                        <input
-                          type="text"
+                        <CategoryAutocomplete
                           value={customItemForm.category}
-                          onChange={(e) => setCustomItemForm({...customItemForm, category: e.target.value})}
+                          onChange={(value) => setCustomItemForm({...customItemForm, category: value})}
                           className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                           placeholder="Custom"
                         />
@@ -478,6 +525,11 @@ export default function OrdersPage() {
                       >
                         {order.is_paid ? 'Paid' : 'Unpaid'}
                       </span>
+                      {order.is_paid && order.payment_type && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          via {order.payment_type}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -538,6 +590,85 @@ export default function OrdersPage() {
             ← Back to Home
           </a>
         </div>
+
+        {/* Payment Type Modal */}
+        {showPaymentTypeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-semibold mb-4">Select Payment Type</h3>
+              <p className="text-gray-600 mb-4">Please select how the customer paid for this order:</p>
+              
+              <div className="space-y-3 mb-6">
+                {['Cash', 'E-transfer', 'Credit Card'].map((type) => (
+                  <label
+                    key={type}
+                    className="flex items-center p-3 border border-gray-300 rounded-md hover:bg-blue-50 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="paymentType"
+                      value={type}
+                      checked={selectedPaymentType === type}
+                      onChange={(e) => setSelectedPaymentType(e.target.value)}
+                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="ml-3 text-gray-900 font-medium">{type}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMarkAsPaid}
+                  disabled={!selectedPaymentType}
+                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Confirm Payment
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPaymentTypeModal(false);
+                    setSelectedOrderForPayment(null);
+                    setSelectedPaymentType('');
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Unpaid Confirmation Modal */}
+        {showUnpaidConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-xl font-semibold mb-4 text-yellow-600">Confirm Unpaid Status</h3>
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to mark this order as unpaid? This will remove the payment type information.
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMarkAsUnpaid}
+                  className="flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-colors"
+                >
+                  Yes, Mark as Unpaid
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUnpaidConfirmation(false);
+                    setOrderToMarkUnpaid(null);
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
