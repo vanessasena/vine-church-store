@@ -1,29 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useBanner } from '../contexts/BannerContext';
 
 export default function EnvironmentBanner() {
   const [environment, setEnvironment] = useState<string>('');
   const [isDismissed, setIsDismissed] = useState(false);
+  const { setBannerVisible } = useBanner();
 
-  useEffect(() => {
-    // Check environment from env variable first, then fallback to detection
-    const envFromConfig = process.env.NEXT_PUBLIC_APP_ENV;
-    const isDev = process.env.NODE_ENV === 'development';
-
-    console.log('Detected environment from config:', envFromConfig);
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-
-    if (envFromConfig && envFromConfig !== 'production') {
-      setEnvironment(envFromConfig);
-    } else if (isDev) {
-      setEnvironment('development');
-    }
-  }, []);
-
-  if (!environment) return null;
-
-  const getEnvironmentConfig = () => {
+  const getEnvironmentConfig = useCallback(() => {
     switch (environment) {
       case 'development':
         return {
@@ -46,7 +31,28 @@ export default function EnvironmentBanner() {
       default:
         return null;
     }
-  };
+  }, [environment]);
+
+  useEffect(() => {
+    // Check environment from env variable first, then fallback to detection
+    const envFromConfig = process.env.NEXT_PUBLIC_APP_ENV;
+    const isDev = process.env.NODE_ENV === 'development';
+
+    if (envFromConfig && envFromConfig !== 'production') {
+      setEnvironment(envFromConfig);
+    } else if (isDev) {
+      setEnvironment('development');
+    }
+  }, []);
+
+  // Update banner visibility when environment or dismissed state changes
+  useEffect(() => {
+    const config = getEnvironmentConfig();
+    const isVisible = !!(environment && config && !isDismissed);
+    setBannerVisible(isVisible);
+  }, [environment, isDismissed, setBannerVisible, getEnvironmentConfig]);
+
+  if (!environment) return null;
 
   const config = getEnvironmentConfig();
   if (!config) return null;
