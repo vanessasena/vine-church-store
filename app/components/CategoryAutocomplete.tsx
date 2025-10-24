@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+interface Category {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
 interface CategoryAutocompleteProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, categoryId?: string) => void;
   className?: string;
   placeholder?: string;
   required?: boolean;
@@ -17,9 +23,10 @@ export default function CategoryAutocomplete({
   placeholder = 'e.g., Beverages',
   required = false,
 }: CategoryAutocompleteProps) {
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +57,7 @@ export default function CategoryAutocomplete({
     // Filter categories based on input value
     if (value) {
       const filtered = categories.filter((cat) =>
-        cat.toLowerCase().includes(value.toLowerCase())
+        cat.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredCategories(filtered);
     } else {
@@ -68,6 +75,34 @@ export default function CategoryAutocomplete({
     }
   };
 
+  const createCategory = async (name: string) => {
+    setIsCreatingCategory(true);
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      if (response.ok) {
+        const newCategory = await response.json();
+        setCategories(prev => [...prev, newCategory]);
+        onChange(newCategory.name, newCategory.id);
+        setShowDropdown(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to create category');
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+      alert('Failed to create category');
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
@@ -78,13 +113,13 @@ export default function CategoryAutocomplete({
     setShowDropdown(true);
   };
 
-  const selectCategory = (category: string) => {
-    onChange(category);
+  const selectCategory = (category: Category) => {
+    onChange(category.name, category.id);
     setShowDropdown(false);
   };
 
   const isExactMatch = categories.some(
-    (cat) => cat.toLowerCase() === value.toLowerCase()
+    (cat) => cat.name.toLowerCase() === value.toLowerCase()
   );
 
   const showAddNew = value.trim() !== '' && !isExactMatch;
@@ -109,14 +144,14 @@ export default function CategoryAutocomplete({
         >
           {filteredCategories.length > 0 && (
             <div className="py-1">
-              {filteredCategories.map((category, index) => (
+              {filteredCategories.map((category) => (
                 <button
-                  key={index}
+                  key={category.id}
                   type="button"
                   onClick={() => selectCategory(category)}
                   className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors"
                 >
-                  {category}
+                  {category.name}
                 </button>
               ))}
             </div>
@@ -124,10 +159,11 @@ export default function CategoryAutocomplete({
           {showAddNew && (
             <button
               type="button"
-              onClick={() => selectCategory(value)}
-              className="w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 transition-colors border-t border-gray-200 font-medium text-green-700"
+              onClick={() => createCategory(value.trim())}
+              disabled={isCreatingCategory}
+              className="w-full text-left px-3 py-2 bg-green-50 hover:bg-green-100 transition-colors border-t border-gray-200 font-medium text-green-700 disabled:opacity-50"
             >
-              + Add new: "{value}"
+              {isCreatingCategory ? 'Creating...' : `+ Add new: "${value}"`}
             </button>
           )}
         </div>

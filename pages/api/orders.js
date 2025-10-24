@@ -12,7 +12,10 @@ export default async function handler(req, res) {
             *,
             order_items (
               *,
-              items (*)
+              items (
+                *,
+                category:categories(*)
+              )
             )
           `)
           .order('created_at', { ascending: false });
@@ -49,7 +52,6 @@ export default async function handler(req, res) {
           item_id: item.id || null, // Allow null for custom items
           quantity: item.quantity,
           item_name_at_time: item.name,
-          item_category_at_time: item.category || 'Unknown',
           price_at_time: item.price
         }));
 
@@ -66,7 +68,10 @@ export default async function handler(req, res) {
             *,
             order_items (
               *,
-              items (*)
+              items (
+                *,
+                category:categories(*)
+              )
             )
           `)
           .eq('id', orderData.id)

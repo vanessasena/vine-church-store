@@ -49,44 +49,21 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 4. Set up the database:
 
-Run the following SQL in your Supabase SQL editor:
+**For new installations:**
+Run the SQL in `database-setup.sql` in your Supabase SQL editor.
 
-```sql
--- Create items table
-CREATE TABLE items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  price DECIMAL(10, 2) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+**For existing installations (migration required):**
+1. First run the migration script `database-migration-category-table.sql` in your Supabase SQL editor
+2. This will migrate your existing data from the old `items.category` text field to the new `categories` table structure
 
--- Create orders table
-CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_name TEXT NOT NULL,
-  total_cost DECIMAL(10, 2) NOT NULL,
-  is_paid BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create order_items table
-CREATE TABLE order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
-  item_id UUID REFERENCES items(id),
-  quantity INTEGER NOT NULL,
-  price_at_time DECIMAL(10, 2) NOT NULL,
-  item_name_at_time TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create indexes for better performance
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_order_items_item_id ON order_items(item_id);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
-CREATE INDEX idx_items_category ON items(category);
-```
+The migration script will:
+- Create a new `categories` table with `id` and `name` fields
+- Extract existing categories from your items and populate the categories table
+- Add `category_id` foreign key to the items table
+- Update all existing items to reference categories by ID
+- Remove the old `category` text field from items table
+- Remove category tracking fields from order_items (uses current item categories for reports)
+- Update indexes and enable proper foreign key relationships
 
 5. Run the development server:
 ```bash
@@ -114,19 +91,30 @@ vine-church-store/
 
 ## API Endpoints
 
+### Categories API (`/api/categories`)
+
+- `GET` - Fetch all categories
+- `POST` - Create a new category
+- `PUT` - Update a category
+- `DELETE` - Delete a category (only if not used by any items)
+
 ### Items API (`/api/items`)
 
-- `GET` - Fetch all items
-- `POST` - Create a new item
+- `GET` - Fetch all items with category information
+- `POST` - Create a new item (requires category_id)
 - `PUT` - Update an item
 - `DELETE` - Delete an item
 
 ### Orders API (`/api/orders`)
 
-- `GET` - Fetch all orders with items
+- `GET` - Fetch all orders with items and category information
 - `POST` - Create a new order
 - `PUT` - Update order payment status
 - `DELETE` - Delete an order
+
+### Reports API (`/api/reports`)
+
+- `GET` - Generate sales reports with optional month/year filtering
 
 ## Usage
 
