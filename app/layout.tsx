@@ -18,7 +18,7 @@ export default function RootLayout({
       <body className="antialiased">
         <EnvironmentBanner />
         <Header />
-        <div className="pt-16">
+        <div className="pt-24">
           {children}
         </div>
       </body>
