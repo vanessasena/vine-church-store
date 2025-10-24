@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import EnvironmentBanner from "./components/EnvironmentBanner";
 import Header from "./components/Header";
+import DynamicLayout from "./components/DynamicLayout";
+import { BannerProvider } from "./contexts/BannerContext";
 
 export const metadata: Metadata = {
   title: "Vine Church Orders Management",
@@ -16,11 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <EnvironmentBanner />
-        <Header />
-        <div className="pt-24">
-          {children}
-        </div>
+        <BannerProvider>
+          <EnvironmentBanner />
+          <Header />
+          <DynamicLayout>
+            {children}
+          </DynamicLayout>
+        </BannerProvider>
       </body>
     </html>
   );

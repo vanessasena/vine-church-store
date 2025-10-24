@@ -1,16 +1,18 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useBanner } from '../contexts/BannerContext';
 
 export default function Header() {
   const pathname = usePathname();
+  const { isBannerVisible } = useBanner();
 
   const isActive = (path: string) => {
     return pathname === path;
   };
 
   return (
-    <header className="bg-white shadow-md fixed-colors fixed top-10 left-0 right-0 z-50">
+    <header className={`bg-white shadow-md fixed-colors fixed left-0 right-0 z-50 ${isBannerVisible ? 'top-10' : 'top-0'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Title */}
