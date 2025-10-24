@@ -9,6 +9,8 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
 
   useEffect(() => {
     fetchItems();
@@ -19,6 +21,17 @@ export default function ItemsPage() {
       const response = await fetch('/api/items');
       const data = await response.json();
       setItems(data);
+
+      // Extract unique categories from items
+      const uniqueCategories = data
+        .filter((item: Item) => item.category) // Only include items with categories
+        .map((item: Item) => item.category)
+        .filter((category: any, index: number, array: any[]) =>
+          // Remove duplicates by id
+          array.findIndex(c => c.id === category.id) === index
+        );
+
+      setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching items:', error);
     } finally {
@@ -61,7 +74,7 @@ export default function ItemsPage() {
       }
 
       setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
-      fetchItems();
+      fetchItems(); // This will now also update the categories list
     } catch (error) {
       console.error('Error saving item:', error);
     }
@@ -85,7 +98,7 @@ export default function ItemsPage() {
       await fetch(`/api/items?id=${id}`, {
         method: 'DELETE',
       });
-      fetchItems();
+      fetchItems(); // This will now also update the categories list
     } catch (error) {
       console.error('Error deleting item:', error);
     }
@@ -95,6 +108,18 @@ export default function ItemsPage() {
     setEditingId(null);
     setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
   };
+
+  // Filter items based on selected category
+  const filteredItems = selectedCategoryFilter
+    ? items.filter(item => item.category_id === selectedCategoryFilter)
+    : items;
+
+  // Reset category filter if selected category no longer exists
+  useEffect(() => {
+    if (selectedCategoryFilter && !categories.some(cat => cat.id === selectedCategoryFilter)) {
+      setSelectedCategoryFilter('');
+    }
+  }, [categories, selectedCategoryFilter]);
 
   if (loading) {
     return (
@@ -210,10 +235,40 @@ export default function ItemsPage() {
           {/* Items List Section */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-semibold mb-4">Items List</h2>
-              {items.length === 0 ? (
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-semibold">Items List</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Showing {filteredItems.length} of {items.length} items
+                    {selectedCategoryFilter && (
+                      <span className="ml-1">
+                        in {categories.find(c => c.id === selectedCategoryFilter)?.name}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
+                  <select
+                    value={selectedCategoryFilter}
+                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {filteredItems.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
-                  No items yet. Add your first item to get started!
+                  {selectedCategoryFilter
+                    ? 'No items found in the selected category.'
+                    : 'No items yet. Add your first item to get started!'
+                  }
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -227,7 +282,7 @@ export default function ItemsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item) => (
+                      {filteredItems.map((item) => (
                         <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4">{item.name}</td>
                           <td className="py-3 px-4">
