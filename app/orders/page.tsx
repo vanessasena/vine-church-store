@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { Item, Order } from '@/lib/types';
 import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 
-interface CartItem extends Item {
+interface CartItem extends Omit<Item, 'category'> {
   quantity: number;
   isCustom?: boolean;
   customPrice?: number;
+  category?: string | Item['category']; // Allow both string and Category object, make optional
 }
 
 export default function OrdersPage() {
@@ -75,6 +76,7 @@ export default function OrdersPage() {
     const customItem: CartItem = {
       id: `custom-${Date.now()}`, // Generate unique ID for custom items
       name: customItemForm.name,
+      category_id: '', // Custom items don't have category_id
       category: customItemForm.category || 'Custom',
       price: parseFloat(customItemForm.price),
       quantity: customItemForm.quantity,
@@ -105,7 +107,7 @@ export default function OrdersPage() {
   };
 
   const getUniqueCategories = () => {
-    const categories = items.map(item => item.category);
+    const categories = items.map(item => item.category?.name || 'Unknown');
     return Array.from(new Set(categories)).sort();
   };
 
@@ -113,7 +115,7 @@ export default function OrdersPage() {
     if (!selectedCategory) {
       return items;
     }
-    return items.filter(item => item.category === selectedCategory);
+    return items.filter(item => item.category?.name === selectedCategory);
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -131,7 +133,8 @@ export default function OrdersPage() {
           id: item.isCustom ? null : item.id, // Custom items don't have database IDs
           quantity: item.quantity,
           name: item.name,
-          category: item.category,
+          category: typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown',
+          category_id: typeof item.category === 'string' ? null : item.category?.id,
           price: item.isCustom ? item.customPrice! : item.price,
         })),
       };
@@ -177,10 +180,10 @@ export default function OrdersPage() {
       await fetch('/api/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id: selectedOrderForPayment, 
+        body: JSON.stringify({
+          id: selectedOrderForPayment,
           is_paid: true,
-          payment_type: selectedPaymentType 
+          payment_type: selectedPaymentType
         }),
       });
       setShowPaymentTypeModal(false);
@@ -197,9 +200,9 @@ export default function OrdersPage() {
       await fetch('/api/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id: orderToMarkUnpaid, 
-          is_paid: false 
+        body: JSON.stringify({
+          id: orderToMarkUnpaid,
+          is_paid: false
         }),
       });
       setShowUnpaidConfirmation(false);
@@ -402,7 +405,7 @@ export default function OrdersPage() {
                       className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
                     >
                       <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-gray-600">{item.category}</div>
+                      <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
                       <div className="text-sm font-semibold text-green-600">${item.price.toFixed(2)}</div>
                     </button>
                   ))}
@@ -431,7 +434,7 @@ export default function OrdersPage() {
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{item.name}</span>
                               <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                                {item.category}
+                                {typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown'}
                               </span>
                             </div>
                             <span className="text-sm text-gray-600">${displayPrice.toFixed(2)}</span>
@@ -597,7 +600,7 @@ export default function OrdersPage() {
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-xl font-semibold mb-4">Select Payment Type</h3>
               <p className="text-gray-600 mb-4">Please select how the customer paid for this order:</p>
-              
+
               <div className="space-y-3 mb-6">
                 {['Cash', 'E-transfer', 'Credit Card'].map((type) => (
                   <label

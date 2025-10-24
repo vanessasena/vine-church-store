@@ -8,7 +8,10 @@ export default async function handler(req, res) {
       try {
         const { data, error } = await supabase
           .from('items')
-          .select('*')
+          .select(`
+            *,
+            category:categories(*)
+          `)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -19,16 +22,19 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category, price } = req.body;
-        
-        if (!name || !category || price === undefined) {
+        const { name, category_id, price } = req.body;
+
+        if (!name || !category_id || price === undefined) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
         const { data, error } = await supabase
           .from('items')
-          .insert([{ name, category, price }])
-          .select()
+          .insert([{ name, category_id, price }])
+          .select(`
+            *,
+            category:categories(*)
+          `)
           .single();
 
         if (error) throw error;
@@ -39,17 +45,20 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category, price } = req.body;
-        
+        const { id, name, category_id, price } = req.body;
+
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
         }
 
         const { data, error } = await supabase
           .from('items')
-          .update({ name, category, price })
+          .update({ name, category_id, price })
           .eq('id', id)
-          .select()
+          .select(`
+            *,
+            category:categories(*)
+          `)
           .single();
 
         if (error) throw error;
@@ -61,7 +70,7 @@ export default async function handler(req, res) {
     case 'DELETE':
       try {
         const { id } = req.query;
-        
+
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
         }

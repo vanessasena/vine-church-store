@@ -188,6 +188,27 @@ button.text-white,
   color: #166534 !important;
 }
 
+/* Gray color variations */
+.text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.text-gray-900 {
+  color: #111827 !important;
+}
+
 .text-purple-600 {
   color: #9333ea !important;
 }
@@ -232,6 +253,23 @@ a.hover\:text-blue-800:hover {
   color: #dc2626 !important;
 }
 
+/* Override font-medium for colored text */
+.fixed-colors .font-medium.text-gray-700 {
+  color: #374151 !important;
+}
+
+.fixed-colors .font-medium.text-blue-600 {
+  color: #2563eb !important;
+}
+
+.fixed-colors .font-medium.text-red-600 {
+  color: #dc2626 !important;
+}
+
+.fixed-colors .font-medium.text-green-600 {
+  color: #16a34a !important;
+}
+
 .fixed-colors .text-sm {
   color: #6b7280 !important; /* gray-500 */
 }
@@ -271,6 +309,15 @@ a.hover\:text-blue-800:hover {
 
 .fixed-colors .text-yellow-600 {
   color: #ca8a04 !important;
+}
+
+/* Ensure gray color classes work properly */
+.fixed-colors .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.fixed-colors .text-gray-800 {
+  color: #1f2937 !important;
 }
 
 /* Specific overrides for badges and small text */

@@ -7,7 +7,7 @@ import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', category: '', price: '' });
+  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,9 +29,14 @@ export default function ItemsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.categoryId) {
+      alert('Please select a category');
+      return;
+    }
+
     const itemData = {
       name: formData.name,
-      category: formData.category,
+      category_id: formData.categoryId,
       price: parseFloat(formData.price),
     };
 
@@ -54,7 +59,7 @@ export default function ItemsPage() {
         });
       }
 
-      setFormData({ name: '', category: '', price: '' });
+      setFormData({ name: '', category: '', categoryId: '', price: '' });
       fetchItems();
     } catch (error) {
       console.error('Error saving item:', error);
@@ -64,7 +69,8 @@ export default function ItemsPage() {
   const handleEdit = (item: Item) => {
     setFormData({
       name: item.name,
-      category: item.category,
+      category: item.category?.name || '',
+      categoryId: item.category_id,
       price: item.price.toString(),
     });
     setEditingId(item.id);
@@ -85,7 +91,7 @@ export default function ItemsPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', category: '', price: '' });
+    setFormData({ name: '', category: '', categoryId: '', price: '' });
   };
 
   if (loading) {
@@ -141,7 +147,11 @@ export default function ItemsPage() {
                   </label>
                   <CategoryAutocomplete
                     value={formData.category}
-                    onChange={(value) => setFormData({ ...formData, category: value })}
+                    onChange={(value, categoryId) => setFormData({
+                      ...formData,
+                      category: value,
+                      categoryId: categoryId || ''
+                    })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Beverages"
                     required
@@ -209,7 +219,7 @@ export default function ItemsPage() {
                           <td className="py-3 px-4">{item.name}</td>
                           <td className="py-3 px-4">
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-                              {item.category}
+                              {item.category?.name || 'Unknown'}
                             </span>
                           </td>
                           <td className="py-3 px-4">${item.price.toFixed(2)}</td>

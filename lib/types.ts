@@ -1,9 +1,16 @@
+export interface Category {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
 export interface Item {
   id: string;
   name: string;
-  category: string;
+  category_id: string;
   price: number;
   created_at?: string;
+  category?: Category;
 }
 
 export interface OrderItem {
@@ -14,6 +21,7 @@ export interface OrderItem {
   price_at_time: number;
   item_name_at_time: string;
   item_category_at_time?: string;
+  item_category_id_at_time?: string;
   item?: Item;
 }
 
