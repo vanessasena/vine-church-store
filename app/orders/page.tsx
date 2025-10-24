@@ -507,15 +507,6 @@ export default function OrdersPage() {
           )}
         </div>
 
-        <div className="mt-6">
-          <a
-            href="/"
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            ← Back to Home
-          </a>
-        </div>
-
         {/* Payment Type Modal */}
         {showPaymentTypeModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

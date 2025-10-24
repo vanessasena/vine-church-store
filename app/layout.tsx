@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import EnvironmentBanner from "./components/EnvironmentBanner";
+import Header from "./components/Header";
 
 export const metadata: Metadata = {
   title: "Vine Church Orders Management",
@@ -16,7 +17,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <EnvironmentBanner />
-        {children}
+        <Header />
+        <div className="pt-16">
+          {children}
+        </div>
       </body>
     </html>
   );
