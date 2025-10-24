@@ -7,7 +7,7 @@ import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '' });
+  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,7 +37,8 @@ export default function ItemsPage() {
     const itemData = {
       name: formData.name,
       category_id: formData.categoryId,
-      price: parseFloat(formData.price),
+      price: formData.hasCustomPrice ? null : parseFloat(formData.price),
+      has_custom_price: formData.hasCustomPrice,
     };
 
     try {
@@ -59,7 +60,7 @@ export default function ItemsPage() {
         });
       }
 
-      setFormData({ name: '', category: '', categoryId: '', price: '' });
+      setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
       fetchItems();
     } catch (error) {
       console.error('Error saving item:', error);
@@ -71,7 +72,8 @@ export default function ItemsPage() {
       name: item.name,
       category: item.category?.name || '',
       categoryId: item.category_id,
-      price: item.price.toString(),
+      price: item.price?.toString() || '',
+      hasCustomPrice: item.has_custom_price || false,
     });
     setEditingId(item.id);
   };
@@ -91,7 +93,7 @@ export default function ItemsPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', category: '', categoryId: '', price: '' });
+    setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
   };
 
   if (loading) {
@@ -159,19 +161,35 @@ export default function ItemsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price ($)
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasCustomPrice}
+                      onChange={(e) => setFormData({ ...formData, hasCustomPrice: e.target.checked, price: e.target.checked ? '' : formData.price })}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Has Custom Price (price set when ordering)
+                    </span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0.00"
-                  />
                 </div>
+
+                {!formData.hasCustomPrice && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <button
@@ -222,7 +240,13 @@ export default function ItemsPage() {
                               {item.category?.name || 'Unknown'}
                             </span>
                           </td>
-                          <td className="py-3 px-4">${item.price.toFixed(2)}</td>
+                          <td className="py-3 px-4">
+                            {item.has_custom_price ? (
+                              <span className="text-purple-600 font-medium">Custom</span>
+                            ) : (
+                              `$${item.price?.toFixed(2) || '0.00'}`
+                            )}
+                          </td>
                           <td className="py-3 px-4">
                             <div className="flex gap-2">
                               <button
@@ -247,15 +271,6 @@ export default function ItemsPage() {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="mt-6">
-          <a
-            href="/"
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            ← Back to Home
-          </a>
         </div>
       </div>
     </div>

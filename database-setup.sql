@@ -13,7 +13,8 @@ CREATE TABLE items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   category_id UUID NOT NULL REFERENCES categories(id),
-  price DECIMAL(10, 2) NOT NULL,
+  price DECIMAL(10, 2),
+  has_custom_price BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

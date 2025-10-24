@@ -22,15 +22,20 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category_id, price } = req.body;
+        const { name, category_id, price, has_custom_price } = req.body;
 
-        if (!name || !category_id || price === undefined) {
+        if (!name || !category_id) {
           return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Validate that if has_custom_price is false, price must be provided
+        if (!has_custom_price && (price === undefined || price === null)) {
+          return res.status(400).json({ error: 'Price is required for non-custom-price items' });
         }
 
         const { data, error } = await supabase
           .from('items')
-          .insert([{ name, category_id, price }])
+          .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false }])
           .select(`
             *,
             category:categories(*)
@@ -45,15 +50,20 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category_id, price } = req.body;
+        const { id, name, category_id, price, has_custom_price } = req.body;
 
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
         }
 
+        // Validate that if has_custom_price is false, price must be provided
+        if (!has_custom_price && (price === undefined || price === null)) {
+          return res.status(400).json({ error: 'Price is required for non-custom-price items' });
+        }
+
         const { data, error } = await supabase
           .from('items')
-          .update({ name, category_id, price })
+          .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false })
           .eq('id', id)
           .select(`
             *,
