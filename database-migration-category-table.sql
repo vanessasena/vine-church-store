@@ -48,3 +48,9 @@ SET item_category_id_at_time = (
   SELECT id FROM categories WHERE categories.name = order_items.item_category_at_time
 )
 WHERE item_category_at_time IS NOT NULL;
+
+-- Step 12: Remove the redundant item_category_at_time column
+ALTER TABLE order_items DROP COLUMN item_category_at_time;
+
+-- Step 13: Remove the item_category_id_at_time column (use current item category instead)
+ALTER TABLE order_items DROP COLUMN item_category_id_at_time;

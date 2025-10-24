@@ -17,7 +17,11 @@ export default async function handler(req, res) {
       .select(`
         *,
         order_items (
-          *
+          *,
+          items (
+            *,
+            category:categories(*)
+          )
         )
       `)
       .order('created_at', { ascending: false });
@@ -26,11 +30,11 @@ export default async function handler(req, res) {
     if (month && year) {
       const monthNum = parseInt(month);
       const yearNum = parseInt(year);
-      
+
       // Create start and end dates for the month
       const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
       const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999).toISOString();
-      
+
       supabaseQuery = supabaseQuery
         .gte('created_at', startDate)
         .lte('created_at', endDate);
@@ -56,28 +60,27 @@ export default async function handler(req, res) {
     orders.forEach(order => {
       if (order.order_items && order.order_items.length > 0) {
         order.order_items.forEach(item => {
-          const category = item.item_category_at_time || 'Unknown';
-          if (!byCategory[category]) {
-            byCategory[category] = { total: 0, count: 0 };
+          const categoryName = item.items?.category?.name || 'Unknown';
+
+          if (!byCategory[categoryName]) {
+            byCategory[categoryName] = { total: 0, count: 0 };
           }
-          byCategory[category].total += item.price_at_time * item.quantity;
-          byCategory[category].count += item.quantity;
+          byCategory[categoryName].total += item.price_at_time * item.quantity;
+          byCategory[categoryName].count += item.quantity;
         });
       }
-    });
-
-    // Aggregate by payment type
+    });    // Aggregate by payment type
     const byPaymentType = {
       'Paid': { total: 0, count: 0 },
       'Unpaid': { total: 0, count: 0 }
     };
-    
+
     const byPaymentMethod = {};
     orders.forEach(order => {
       if (order.is_paid) {
         byPaymentType['Paid'].total += order.total_cost;
         byPaymentType['Paid'].count += 1;
-        
+
         const paymentMethod = order.payment_type || 'Unknown';
         if (!byPaymentMethod[paymentMethod]) {
           byPaymentMethod[paymentMethod] = { total: 0, count: 0 };

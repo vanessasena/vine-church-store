@@ -61,8 +61,9 @@ The migration script will:
 - Extract existing categories from your items and populate the categories table
 - Add `category_id` foreign key to the items table
 - Update all existing items to reference categories by ID
-- Remove the old `category` text field
-- Update indexes and add category support to order_items for historical tracking
+- Remove the old `category` text field from items table
+- Remove category tracking fields from order_items (uses current item categories for reports)
+- Update indexes and enable proper foreign key relationships
 
 5. Run the development server:
 ```bash

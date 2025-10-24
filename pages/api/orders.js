@@ -52,8 +52,6 @@ export default async function handler(req, res) {
           item_id: item.id || null, // Allow null for custom items
           quantity: item.quantity,
           item_name_at_time: item.name,
-          item_category_at_time: item.category?.name || item.category || 'Unknown',
-          item_category_id_at_time: item.category_id || item.category?.id || null,
           price_at_time: item.price
         }));
 

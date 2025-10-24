@@ -546,9 +546,9 @@ export default function OrdersPage() {
                               <span>
                                 {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'}
                               </span>
-                              {orderItem.item_category_at_time && (
+                              {orderItem.item?.category?.name && (
                                 <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                                  {orderItem.item_category_at_time}
+                                  {orderItem.item.category.name}
                                 </span>
                               )}
                             </div>
