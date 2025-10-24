@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Item, Order } from '@/lib/types';
+import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 
 interface CartItem extends Item {
   quantity: number;
@@ -306,10 +307,9 @@ export default function OrdersPage() {
                         <label className="block text-xs font-medium text-purple-700 mb-1">
                           Category
                         </label>
-                        <input
-                          type="text"
+                        <CategoryAutocomplete
                           value={customItemForm.category}
-                          onChange={(e) => setCustomItemForm({...customItemForm, category: e.target.value})}
+                          onChange={(value) => setCustomItemForm({...customItemForm, category: value})}
                           className="w-full px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                           placeholder="Custom"
                         />

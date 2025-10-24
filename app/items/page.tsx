@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Item } from '@/lib/types';
+import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -138,13 +139,12 @@ export default function ItemsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <CategoryAutocomplete
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, category: value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Beverages"
+                    required
                   />
                 </div>
 
