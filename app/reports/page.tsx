@@ -18,14 +18,21 @@ interface ReportData {
 export default function ReportsPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
 
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const fetchReportData = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/reports');
+      let url = '/api/reports';
+      if (selectedMonth && selectedYear) {
+        url += `?month=${selectedMonth}&year=${selectedYear}`;
+      }
+      const response = await fetch(url);
       const data = await response.json();
       setReportData(data);
     } catch (error) {
@@ -34,6 +41,30 @@ export default function ReportsPage() {
       setLoading(false);
     }
   };
+
+  const handleClearFilter = () => {
+    setSelectedMonth('');
+    setSelectedYear('');
+  };
+
+  // Generate year options (current year and 5 years back)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  const monthOptions = [
+    { value: '1', label: 'January' },
+    { value: '2', label: 'February' },
+    { value: '3', label: 'March' },
+    { value: '4', label: 'April' },
+    { value: '5', label: 'May' },
+    { value: '6', label: 'June' },
+    { value: '7', label: 'July' },
+    { value: '8', label: 'August' },
+    { value: '9', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
 
   if (loading) {
     return (
@@ -66,6 +97,62 @@ export default function ReportsPage() {
               <p className="text-gray-600">View order analytics and insights</p>
             </div>
           </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Filter by Month</h2>
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Month
+              </label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Months</option>
+                {monthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Year</option>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(selectedMonth || selectedYear) && (
+              <div>
+                <button
+                  onClick={handleClearFilter}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  Clear Filter
+                </button>
+              </div>
+            )}
+          </div>
+          {selectedMonth && selectedYear && (
+            <div className="mt-4 text-sm text-gray-600">
+              Showing results for {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+            </div>
+          )}
         </div>
 
         {/* Summary Cards */}

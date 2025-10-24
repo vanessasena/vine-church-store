@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase';
 
 export default async function handler(req, res) {
-  const { method } = req;
+  const { method, query } = req;
 
   if (method !== 'GET') {
     res.setHeader('Allow', ['GET']);
@@ -9,8 +9,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch all orders with their order items
-    const { data: orders, error } = await supabase
+    const { month, year } = query;
+
+    // Build the query
+    let supabaseQuery = supabase
       .from('orders')
       .select(`
         *,
@@ -19,6 +21,22 @@ export default async function handler(req, res) {
         )
       `)
       .order('created_at', { ascending: false });
+
+    // Apply month filter if provided
+    if (month && year) {
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+      
+      // Create start and end dates for the month
+      const startDate = new Date(yearNum, monthNum - 1, 1).toISOString();
+      const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999).toISOString();
+      
+      supabaseQuery = supabaseQuery
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+    }
+
+    const { data: orders, error } = await supabaseQuery;
 
     if (error) throw error;
 
