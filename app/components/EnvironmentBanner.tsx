@@ -54,7 +54,7 @@ export default function EnvironmentBanner() {
   if (isDismissed) return null;
 
   return (
-    <div className={`${config.cssClass} px-4 py-2 text-center text-sm font-medium relative`}>
+    <div className={`${config.cssClass} px-4 py-2 text-center text-sm font-medium fixed top-0 left-0 right-0 z-60`}>
       <div className="flex items-center justify-center gap-2">
         <span>{config.text}</span>
         <span className="hidden sm:inline">- {config.description}</span>

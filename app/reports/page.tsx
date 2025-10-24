@@ -87,11 +87,6 @@ export default function ReportsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <img
-              src="/vine-church-logo.svg"
-              alt="Vine Church Logo"
-              className="w-12 h-12"
-            />
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Sales Reports</h1>
               <p className="text-gray-600">View order analytics and insights</p>
@@ -163,21 +158,21 @@ export default function ReportsPage() {
               ${reportData.summary.totalRevenue.toFixed(2)}
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm font-medium text-gray-600 mb-2">Total Orders</div>
             <div className="text-3xl font-bold text-blue-600">
               {reportData.summary.totalOrders}
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm font-medium text-gray-600 mb-2">Paid Orders</div>
             <div className="text-3xl font-bold text-green-600">
               {reportData.summary.paidOrders}
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm font-medium text-gray-600 mb-2">Unpaid Orders</div>
             <div className="text-3xl font-bold text-red-600">
