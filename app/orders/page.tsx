@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Item, Order } from '@/lib/types';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 interface CartItem extends Omit<Item, 'category'> {
   quantity: number;
@@ -10,6 +11,14 @@ interface CartItem extends Omit<Item, 'category'> {
 }
 
 export default function OrdersPage() {
+  return (
+    <ProtectedRoute>
+      <OrdersPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function OrdersPageContent() {
   const [items, setItems] = useState<Item[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);

@@ -33,3 +33,15 @@ export interface Order {
   created_at: string;
   order_items?: OrderItem[];
 }
+
+export interface AccessRequest {
+  id: string;
+  email: string;
+  full_name: string;
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes?: string;
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+}

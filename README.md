@@ -4,14 +4,18 @@ A modern cafeteria management system built for Vine Church to manage items and o
 
 ## Features
 
+- **Authentication**: Secure user authentication with access request workflow
 - **Items Management**: Register items with categories and prices
 - **Orders Management**: Record customer orders and track total costs
 - **Payment Tracking**: Mark orders as paid or unpaid
+- **Admin Panel**: Review and approve user access requests
 - **Real-time Updates**: Live data synchronization with Supabase
 
 ## Tech Stack
 
 - **Frontend**: Next.js 15 with App Router
+- **Authentication**: Supabase Auth with custom access request flow
+- **Email**: Resend API for notifications
 - **Styling**: Tailwind CSS 4
 - **Database**: PostgreSQL (via Supabase)
 - **Language**: TypeScript
@@ -22,6 +26,7 @@ A modern cafeteria management system built for Vine Church to manage items and o
 
 - Node.js 18+ installed
 - A Supabase account (free tier works fine)
+- A Resend account for email notifications (free tier works fine)
 
 ### Installation
 
@@ -41,31 +46,40 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your Supabase credentials:
+Edit `.env` and add your credentials:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+RESEND_API_KEY=your-resend-api-key
+ADMIN_EMAIL=admin@vinechurch.com
 ```
+
+> **Note**: For detailed authentication setup instructions, see [AUTHENTICATION.md](AUTHENTICATION.md)
 
 4. Set up the database:
 
 **For new installations:**
-Run the SQL in `database-setup.sql` in your Supabase SQL editor.
+1. Run the SQL in `database-setup.sql` in your Supabase SQL editor
+2. Run the SQL in `database-migration-auth.sql` to set up authentication tables and policies
 
 **For existing installations (migration required):**
 1. First run the migration script `database-migration-category-table.sql` in your Supabase SQL editor
-2. This will migrate your existing data from the old `items.category` text field to the new `categories` table structure
+2. Then run `database-migration-auth.sql` to add authentication
 
-The migration script will:
-- Create a new `categories` table with `id` and `name` fields
-- Extract existing categories from your items and populate the categories table
-- Add `category_id` foreign key to the items table
-- Update all existing items to reference categories by ID
-- Remove the old `category` text field from items table
-- Remove category tracking fields from order_items (uses current item categories for reports)
-- Update indexes and enable proper foreign key relationships
+The auth migration script will:
+- Create an `access_requests` table for managing user access requests
+- Update Row Level Security policies to require authentication
+- Set up proper indexes for performance
 
-5. Run the development server:
+5. Create the first admin user:
+
+Since all routes require authentication, you need to create the first admin user manually in Supabase:
+- Go to **Authentication** > **Users** in Supabase dashboard
+- Click **Add User** and enter email/password
+- This user can then approve other users through the `/admin` panel
+
+6. Run the development server:
 ```bash
 npm run dev
 ```
@@ -77,19 +91,42 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 vine-church-store/
 ├── app/
-│   ├── items/           # Items management page
-│   ├── orders/          # Orders management page
-│   └── page.tsx         # Home page
+│   ├── admin/            # Admin panel for access requests
+│   ├── items/            # Items management page
+│   ├── orders/           # Orders management page
+│   ├── reports/          # Sales reports page
+│   ├── login/            # Login page
+│   ├── request-access/   # Access request form
+│   ├── components/       # Reusable components
+│   ├── contexts/         # React contexts (Auth, Banner)
+│   └── page.tsx          # Home page
 ├── pages/api/
-│   ├── items.js         # Items API endpoints
-│   └── orders.js        # Orders API endpoints
+│   ├── access-requests.js  # Access request API
+│   ├── approve-request.js  # Approval API
+│   ├── categories.js       # Categories API
+│   ├── items.js            # Items API
+│   ├── orders.js           # Orders API
+│   └── reports.js          # Reports API
 ├── lib/
-│   ├── supabase.ts      # Supabase client configuration
-│   └── types.ts         # TypeScript type definitions
-└── public/              # Static assets
+│   ├── supabase.ts         # Supabase client (public)
+│   ├── supabase-admin.ts   # Supabase admin client (server-only)
+│   ├── resend.ts           # Resend email client
+│   └── types.ts            # TypeScript type definitions
+└── public/                 # Static assets
 ```
 
 ## API Endpoints
+
+### Authentication APIs
+
+#### Access Requests API (`/api/access-requests`)
+
+- `GET` - Fetch all access requests (for admin panel)
+- `POST` - Create a new access request
+
+#### Approve Request API (`/api/approve-request`)
+
+- `POST` - Approve or reject an access request (creates user account on approval)
 
 ### Categories API (`/api/categories`)
 
@@ -117,6 +154,13 @@ vine-church-store/
 - `GET` - Generate sales reports with optional month/year filtering
 
 ## Usage
+
+### Authentication Flow
+
+1. **Request Access**: New users visit `/request-access` to submit an access request
+2. **Admin Review**: Admins receive an email and can review requests at `/admin`
+3. **User Login**: Approved users receive credentials via email and can log in at `/login`
+4. **Access Protected Pages**: Authenticated users can access all management pages
 
 ### Managing Items
 
