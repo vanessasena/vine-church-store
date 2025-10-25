@@ -119,6 +119,84 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
       }
 
+    case 'PATCH':
+      try {
+        const { id, items } = req.body;
+
+        if (!id || !items || !Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ error: 'Order ID and items are required' });
+        }
+
+        // Check if order is paid
+        const { data: orderCheck, error: checkError } = await supabase
+          .from('orders')
+          .select('is_paid')
+          .eq('id', id)
+          .single();
+
+        if (checkError) throw checkError;
+
+        if (orderCheck.is_paid) {
+          return res.status(400).json({ error: 'Cannot edit paid orders' });
+        }
+
+        // Calculate new total cost
+        const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Update order total
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ total_cost })
+          .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        // Delete existing order items
+        const { error: deleteError } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('order_id', id);
+
+        if (deleteError) throw deleteError;
+
+        // Create new order items
+        const orderItems = items.map(item => ({
+          order_id: id,
+          item_id: item.id || null,
+          quantity: item.quantity,
+          item_name_at_time: item.name,
+          price_at_time: item.price
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        // Fetch complete order data
+        const { data: completeOrder, error: fetchError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              items (
+                *,
+                category:categories(*)
+              )
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        return res.status(200).json(completeOrder);
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
     case 'DELETE':
       try {
         const { id } = req.query;
@@ -149,7 +227,7 @@ export default async function handler(req, res) {
       }
 
     default:
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
       return res.status(405).end(`Method ${method} Not Allowed`);
   }
 }

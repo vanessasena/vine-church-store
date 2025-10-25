@@ -22,6 +22,9 @@ export default function OrdersPage() {
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
   const [showUnpaidConfirmation, setShowUnpaidConfirmation] = useState(false);
   const [orderToMarkUnpaid, setOrderToMarkUnpaid] = useState<string | null>(null);
+  const [showEditOrder, setShowEditOrder] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editCart, setEditCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -203,6 +206,115 @@ export default function OrdersPage() {
       fetchData();
     } catch (error) {
       console.error('Error deleting order:', error);
+    }
+  };
+
+  const startEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    // Convert order items to cart format
+    const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
+      const currentItem = orderItem.item;
+      const isCurrentlyCustomPrice = currentItem?.has_custom_price || false;
+      
+      return {
+        id: orderItem.item_id,
+        name: orderItem.item_name_at_time,
+        category_id: currentItem?.category_id || '',
+        price: currentItem?.price || null,
+        has_custom_price: isCurrentlyCustomPrice,
+        quantity: orderItem.quantity,
+        // If item is currently custom-price, preserve the historical price from order
+        customPrice: isCurrentlyCustomPrice ? orderItem.price_at_time : undefined,
+        category: currentItem?.category,
+      };
+    });
+    setEditCart(cartItems);
+    setShowEditOrder(true);
+  };
+
+  const addToEditCart = (item: Item) => {
+    const existingItem = editCart.find(i => i.id === item.id);
+
+    if (existingItem) {
+      setEditCart(editCart.map(i =>
+        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+      ));
+    } else {
+      setEditCart([...editCart, { ...item, quantity: 1 }]);
+    }
+  };
+
+  const updateEditQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      setEditCart(editCart.filter(i => i.id !== itemId));
+    } else {
+      setEditCart(editCart.map(i =>
+        i.id === itemId ? { ...i, quantity } : i
+      ));
+    }
+  };
+
+  const updateEditCustomPrice = (itemId: string, price: number) => {
+    setEditCart(editCart.map(i =>
+      i.id === itemId ? { ...i, customPrice: price } : i
+    ));
+  };
+
+  const getEditTotalCost = () => {
+    return editCart.reduce((sum, item) => {
+      const price = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
+      return sum + (price * item.quantity);
+    }, 0);
+  };
+
+  const handleUpdateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingOrder) return;
+
+    if (editCart.length === 0) {
+      alert('Please add items to the order');
+      return;
+    }
+
+    // Validate that all custom price items have prices set
+    const missingPrices = editCart.filter(item => item.has_custom_price && !item.customPrice);
+    if (missingPrices.length > 0) {
+      alert('Please set prices for all custom price items');
+      return;
+    }
+
+    try {
+      const orderData = {
+        id: editingOrder.id,
+        items: editCart.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          name: item.name,
+          category: typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown',
+          category_id: typeof item.category === 'string' ? null : item.category?.id,
+          price: item.has_custom_price ? item.customPrice! : item.price!,
+        })),
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (response.ok) {
+        setEditCart([]);
+        setEditingOrder(null);
+        setShowEditOrder(false);
+        fetchData();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update order');
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Failed to update order');
     }
   };
 
@@ -479,6 +591,14 @@ export default function OrdersPage() {
                   )}
 
                   <div className="flex gap-2">
+                    {!order.is_paid && (
+                      <button
+                        onClick={() => startEditOrder(order)}
+                        className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       onClick={() => togglePaymentStatus(order.id, order.is_paid)}
                       className={`flex-1 py-2 px-4 rounded-md transition-colors ${
@@ -577,6 +697,171 @@ export default function OrdersPage() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Order Modal */}
+        {showEditOrder && editingOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 my-8">
+              <h2 className="text-2xl font-semibold mb-4">Edit Order - {editingOrder.customer_name}</h2>
+              <form onSubmit={handleUpdateOrder}>
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold">Available Items</h3>
+                  </div>
+
+                  {items.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-gray-700">Filter by category:</span>
+                        {getUniqueCategories().map((category) => (
+                          <button
+                            key={category}
+                            type="button"
+                            onClick={() => setSelectedCategory(category)}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              selectedCategory === category
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            {category}
+                          </button>
+                        ))}
+                        {selectedCategory && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCategory('')}
+                            className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          >
+                            Clear Filter
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                    {getFilteredItems().map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => addToEditCart(item)}
+                        className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
+                      >
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
+                        <div className="text-sm font-semibold text-green-600">
+                          {item.has_custom_price ? (
+                            <span className="text-purple-600">Custom Price</span>
+                          ) : (
+                            `$${item.price?.toFixed(2) || '0.00'}`
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {getFilteredItems().length === 0 && items.length > 0 && (
+                    <p className="text-gray-500 text-center py-4">
+                      No items found in this category.
+                    </p>
+                  )}
+                </div>
+
+                {editCart.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold mb-2">Order Items</h3>
+                    <div className="bg-gray-50 rounded-md p-4 max-h-80 overflow-y-auto">
+                      {editCart.map((item) => {
+                        const displayPrice = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
+                        return (
+                          <div key={item.id} className="mb-3 pb-3 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{item.name}</span>
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                    {typeof item.category === 'string' ? item.category : item.category?.name || 'Unknown'}
+                                  </span>
+                                </div>
+                                {item.has_custom_price && (
+                                  <div className="mt-2">
+                                    <label className="block text-xs font-medium text-purple-700 mb-1">
+                                      Set Price ($) *
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={item.customPrice || ''}
+                                      onChange={(e) => updateEditCustomPrice(item.id, parseFloat(e.target.value) || 0)}
+                                      className="w-32 px-2 py-1 border border-purple-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                )}
+                                {!item.has_custom_price && (
+                                  <span className="text-sm text-gray-600">${displayPrice.toFixed(2)}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => updateEditQuantity(item.id, item.quantity - 1)}
+                                  className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
+                                >
+                                  -
+                                </button>
+                                <span className="w-8 text-center">{item.quantity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateEditQuantity(item.id, item.quantity + 1)}
+                                  className="w-8 h-8 bg-gray-300 rounded-md hover:bg-gray-400"
+                                >
+                                  +
+                                </button>
+                                <span className="ml-2 font-semibold w-20 text-right">
+                                  ${(displayPrice * item.quantity).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between items-center">
+                        <span className="font-bold text-lg">Total:</span>
+                        <span className="font-bold text-lg text-green-600">
+                          ${getEditTotalCost().toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={editCart.length === 0}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    Update Order
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditCart([]);
+                      setEditingOrder(null);
+                      setShowEditOrder(false);
+                      setSelectedCategory('');
+                    }}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
