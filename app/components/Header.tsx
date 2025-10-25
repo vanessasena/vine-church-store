@@ -2,13 +2,25 @@
 
 import { usePathname } from 'next/navigation';
 import { useBanner } from '../contexts/BannerContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Header() {
   const pathname = usePathname();
   const { isBannerVisible } = useBanner();
+  const { user, signOut } = useAuth();
 
   const isActive = (path: string) => {
     return pathname === path;
+  };
+
+  // Don't show header on login and request-access pages
+  if (pathname === '/login' || pathname === '/request-access') {
+    return null;
+  }
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = '/login';
   };
 
   return (
@@ -28,7 +40,7 @@ export default function Header() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex gap-1">
+          <nav className="flex items-center gap-1">
             <a
               href="/"
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -69,6 +81,20 @@ export default function Header() {
             >
               Reports
             </a>
+            
+            {user && (
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-300">
+                <span className="text-sm text-gray-600">
+                  {user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </nav>
         </div>
       </div>
