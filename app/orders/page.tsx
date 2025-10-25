@@ -212,16 +212,22 @@ export default function OrdersPage() {
   const startEditOrder = (order: Order) => {
     setEditingOrder(order);
     // Convert order items to cart format
-    const cartItems: CartItem[] = (order.order_items || []).map(orderItem => ({
-      id: orderItem.item_id,
-      name: orderItem.item_name_at_time,
-      category_id: orderItem.item?.category_id || '',
-      price: orderItem.item?.price || null,
-      has_custom_price: orderItem.item?.has_custom_price || false,
-      quantity: orderItem.quantity,
-      customPrice: orderItem.item?.has_custom_price ? orderItem.price_at_time : undefined,
-      category: orderItem.item?.category,
-    }));
+    const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
+      const currentItem = orderItem.item;
+      const isCurrentlyCustomPrice = currentItem?.has_custom_price || false;
+      
+      return {
+        id: orderItem.item_id,
+        name: orderItem.item_name_at_time,
+        category_id: currentItem?.category_id || '',
+        price: currentItem?.price || null,
+        has_custom_price: isCurrentlyCustomPrice,
+        quantity: orderItem.quantity,
+        // If item is currently custom-price, preserve the historical price from order
+        customPrice: isCurrentlyCustomPrice ? orderItem.price_at_time : undefined,
+        category: currentItem?.category,
+      };
+    });
     setEditCart(cartItems);
     setShowEditOrder(true);
   };
