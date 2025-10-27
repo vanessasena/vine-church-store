@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Item } from '@/lib/types';
 import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
@@ -15,7 +15,7 @@ export default function ItemsPage() {
 
   return (
     <ProtectedRoute>
-      <ItemsPageContent 
+      <ItemsPageContent
         items={items}
         setItems={setItems}
         loading={loading}
@@ -33,7 +33,7 @@ export default function ItemsPage() {
   );
 }
 
-function ItemsPageContent({ 
+function ItemsPageContent({
   items, setItems, loading, setLoading, formData, setFormData,
   editingId, setEditingId, categories, setCategories,
   selectedCategoryFilter, setSelectedCategoryFilter
@@ -51,6 +51,7 @@ function ItemsPageContent({
   selectedCategoryFilter: string;
   setSelectedCategoryFilter: (filter: string) => void;
 }) {
+  const refItemName = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchItems();
@@ -129,15 +130,18 @@ function ItemsPageContent({
       hasCustomPrice: item.has_custom_price || false,
     });
     setEditingId(item.id);
+    refItemName.current?.focus();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      await fetch(`/api/items?id=${id}`, {
+      console.log('Deleting item with id:', id);
+      const response = await fetch(`/api/items?id=${id}`, {
         method: 'DELETE',
       });
+      if (!response.ok) alert('Failed to delete item. Please try again.');
       fetchItems(); // This will now also update the categories list
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -195,6 +199,7 @@ function ItemsPageContent({
                   </label>
                   <input
                     type="text"
+                    ref={refItemName}
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}

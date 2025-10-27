@@ -644,7 +644,7 @@ function OrdersPageContent() {
                       onClick={() => togglePaymentStatus(order.id, order.is_paid)}
                       className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                         order.is_paid
-                          ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                          ? 'bg-gray-500 text-white hover:bg-gray-600'
                           : 'bg-green-500 text-white hover:bg-green-600'
                       }`}
                     >
