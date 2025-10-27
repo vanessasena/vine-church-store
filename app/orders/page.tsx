@@ -230,7 +230,7 @@ function OrdersPageContent() {
         id: orderItem.item_id,
         name: orderItem.item_name_at_time,
         category_id: currentItem?.category_id || '',
-        price: currentItem?.price || null,
+        price: isCurrentlyCustomPrice ? orderItem.price_at_time : (currentItem?.price ?? null),
         has_custom_price: isCurrentlyCustomPrice,
         quantity: orderItem.quantity,
         // If item is currently custom-price, preserve the historical price from order

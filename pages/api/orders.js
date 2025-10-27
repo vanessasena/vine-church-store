@@ -12,7 +12,7 @@ export default async function handler(req, res) {
             *,
             order_items (
               *,
-              items (
+              item:items (
                 *,
                 category:categories(*)
               )
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
             *,
             order_items (
               *,
-              items (
+              item:items (
                 *,
                 category:categories(*)
               )
@@ -181,7 +181,7 @@ export default async function handler(req, res) {
             *,
             order_items (
               *,
-              items (
+              item:items (
                 *,
                 category:categories(*)
               )
