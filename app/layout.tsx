@@ -4,6 +4,7 @@ import EnvironmentBanner from "./components/EnvironmentBanner";
 import Header from "./components/Header";
 import DynamicLayout from "./components/DynamicLayout";
 import { BannerProvider } from "./contexts/BannerContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "Vine Church Orders Management",
@@ -18,13 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <BannerProvider>
-          <EnvironmentBanner />
-          <Header />
-          <DynamicLayout>
-            {children}
-          </DynamicLayout>
-        </BannerProvider>
+        <AuthProvider>
+          <BannerProvider>
+            <EnvironmentBanner />
+            <Header />
+            <DynamicLayout>
+              {children}
+            </DynamicLayout>
+          </BannerProvider>
+        </AuthProvider>
       </body>
     </html>
   );

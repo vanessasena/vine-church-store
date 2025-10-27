@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Category name is required' });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('categories')
           .insert([{ name: name.trim() }])
           .select()
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Category ID and name are required' });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('categories')
           .update({ name: name.trim() })
           .eq('id', id)
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
         }
 
         // Check if category is being used by any items
-        const { data: items, error: itemsError } = await supabase
+        const { data: items, error: itemsError } = await supabaseAdmin
           .from('items')
           .select('id')
           .eq('category_id', id)
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Cannot delete category that is being used by items' });
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('categories')
           .delete()
           .eq('id', id);

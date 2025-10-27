@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 interface ReportData {
   summary: {
@@ -16,6 +17,14 @@ interface ReportData {
 }
 
 export default function ReportsPage() {
+  return (
+    <ProtectedRoute>
+      <ReportsPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function ReportsPageContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
