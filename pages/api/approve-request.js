@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { supabaseAdmin } from '../../lib/supabase-admin';
-import { resend } from '../../lib/resend';
+import { resend, ADMIN_EMAIL } from '../../lib/resend';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       // Create user in Supabase Auth
       try {
         const temporaryPassword = generateTemporaryPassword();
-        
+
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: accessRequest.email,
           password: temporaryPassword,
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
         try {
           await resend.emails.send({
             from: 'Vine Church Store <onboarding@resend.dev>',
-            to: accessRequest.email,
+            to: ADMIN_EMAIL,
             subject: 'Welcome to Vine Church Store - Account Approved',
             html: `
               <h2>Welcome to Vine Church Store!</h2>
@@ -90,16 +90,16 @@ export default async function handler(req, res) {
         } catch (emailError) {
           console.error('Error sending welcome email:', emailError);
           // User is created but email failed - admin should manually send credentials
-          return res.status(201).json({ 
+          return res.status(201).json({
             message: 'User created successfully, but email notification failed. Please manually send credentials.',
             user: authData.user,
-            temporaryPassword 
+            temporaryPassword
           });
         }
 
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Access request approved and user account created successfully',
-          user: authData.user 
+          user: authData.user
         });
       } catch (error) {
         console.error('Error in user creation process:', error);
