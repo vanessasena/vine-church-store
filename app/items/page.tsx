@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Item } from '@/lib/types';
 import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
+import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -11,6 +12,45 @@ export default function ItemsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
+
+  return (
+    <ProtectedRoute>
+      <ItemsPageContent 
+        items={items}
+        setItems={setItems}
+        loading={loading}
+        setLoading={setLoading}
+        formData={formData}
+        setFormData={setFormData}
+        editingId={editingId}
+        setEditingId={setEditingId}
+        categories={categories}
+        setCategories={setCategories}
+        selectedCategoryFilter={selectedCategoryFilter}
+        setSelectedCategoryFilter={setSelectedCategoryFilter}
+      />
+    </ProtectedRoute>
+  );
+}
+
+function ItemsPageContent({ 
+  items, setItems, loading, setLoading, formData, setFormData,
+  editingId, setEditingId, categories, setCategories,
+  selectedCategoryFilter, setSelectedCategoryFilter
+}: {
+  items: Item[];
+  setItems: (items: Item[]) => void;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+  formData: any;
+  setFormData: (formData: any) => void;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+  categories: { id: string; name: string }[];
+  setCategories: (categories: { id: string; name: string }[]) => void;
+  selectedCategoryFilter: string;
+  setSelectedCategoryFilter: (filter: string) => void;
+}) {
 
   useEffect(() => {
     fetchItems();

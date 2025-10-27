@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -6,13 +6,13 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('orders')
           .select(`
             *,
             order_items (
               *,
-              items (
+              item:items (
                 *,
                 category:categories(*)
               )
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Create order
-        const { data: orderData, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabaseAdmin
           .from('orders')
           .insert([{ customer_name, total_cost, is_paid: false }])
           .select()
@@ -55,20 +55,20 @@ export default async function handler(req, res) {
           price_at_time: item.price
         }));
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseAdmin
           .from('order_items')
           .insert(orderItems);
 
         if (itemsError) throw itemsError;
 
         // Fetch complete order data
-        const { data: completeOrder, error: fetchError } = await supabase
+        const { data: completeOrder, error: fetchError } = await supabaseAdmin
           .from('orders')
           .select(`
             *,
             order_items (
               *,
-              items (
+              item:items (
                 *,
                 category:categories(*)
               )
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
           updateData.payment_type = null;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('orders')
           .update(updateData)
           .eq('id', id)
@@ -115,6 +115,84 @@ export default async function handler(req, res) {
 
         if (error) throw error;
         return res.status(200).json(data);
+      } catch (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+    case 'PATCH':
+      try {
+        const { id, items } = req.body;
+
+        if (!id || !items || !Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ error: 'Order ID and items are required' });
+        }
+
+        // Check if order is paid
+        const { data: orderCheck, error: checkError } = await supabaseAdmin
+          .from('orders')
+          .select('is_paid')
+          .eq('id', id)
+          .single();
+
+        if (checkError) throw checkError;
+
+        if (orderCheck.is_paid) {
+          return res.status(400).json({ error: 'Cannot edit paid orders' });
+        }
+
+        // Calculate new total cost
+        const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Update order total
+        const { error: updateError } = await supabaseAdmin
+          .from('orders')
+          .update({ total_cost })
+          .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        // Delete existing order items
+        const { error: deleteError } = await supabaseAdmin
+          .from('order_items')
+          .delete()
+          .eq('order_id', id);
+
+        if (deleteError) throw deleteError;
+
+        // Create new order items
+        const orderItems = items.map(item => ({
+          order_id: id,
+          item_id: item.id || null,
+          quantity: item.quantity,
+          item_name_at_time: item.name,
+          price_at_time: item.price
+        }));
+
+        const { error: itemsError } = await supabaseAdmin
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        // Fetch complete order data
+        const { data: completeOrder, error: fetchError } = await supabaseAdmin
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              item:items (
+                *,
+                category:categories(*)
+              )
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        return res.status(200).json(completeOrder);
       } catch (error) {
         return res.status(500).json({ error: error.message });
       }
@@ -128,7 +206,7 @@ export default async function handler(req, res) {
         }
 
         // Delete order items first
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseAdmin
           .from('order_items')
           .delete()
           .eq('order_id', id);
@@ -136,7 +214,7 @@ export default async function handler(req, res) {
         if (itemsError) throw itemsError;
 
         // Delete order
-        const { error: orderError } = await supabase
+        const { error: orderError } = await supabaseAdmin
           .from('orders')
           .delete()
           .eq('id', id);
@@ -149,7 +227,7 @@ export default async function handler(req, res) {
       }
 
     default:
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
       return res.status(405).end(`Method ${method} Not Allowed`);
   }
 }
