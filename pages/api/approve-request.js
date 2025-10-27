@@ -82,7 +82,7 @@ export default async function handler(req, res) {
               <p>Temporary Password: ${temporaryPassword}</p>
               <br/>
               <p><strong>Important:</strong> Please change your password after your first login.</p>
-              <p>You can log in at: <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login">Login Page</a></p>
+              <p>You can log in at: <a href="${process.env.VERCEL_URL || 'http://localhost:3000'}/login">Login Page</a></p>
               <br/>
               <p>If you have any questions, please contact the administrator.</p>
             `,

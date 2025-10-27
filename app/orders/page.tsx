@@ -34,6 +34,7 @@ function OrdersPageContent() {
   const [showEditOrder, setShowEditOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
+  const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
 
   useEffect(() => {
     fetchData();
@@ -224,7 +225,7 @@ function OrdersPageContent() {
     const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
       const currentItem = orderItem.item;
       const isCurrentlyCustomPrice = currentItem?.has_custom_price || false;
-      
+
       return {
         id: orderItem.item_id,
         name: orderItem.item_name_at_time,
@@ -325,6 +326,13 @@ function OrdersPageContent() {
       console.error('Error updating order:', error);
       alert('Failed to update order');
     }
+  };
+
+  const getFilteredOrders = () => {
+    if (orderFilter === 'unpaid') {
+      return orders.filter(order => !order.is_paid);
+    }
+    return orders;
   };
 
   if (loading) {
@@ -537,14 +545,38 @@ function OrdersPageContent() {
         )}
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">Order History</h2>
-          {orders.length === 0 ? (
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Order History</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setOrderFilter('all')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  orderFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                All Orders
+              </button>
+              <button
+                onClick={() => setOrderFilter('unpaid')}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                  orderFilter === 'unpaid'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Unpaid Only
+              </button>
+            </div>
+          </div>
+          {getFilteredOrders().length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              No orders yet. Create your first order to get started!
+              {orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
             </p>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
+              {getFilteredOrders().map((order) => (
                 <div key={order.id} className="border border-gray-200 rounded-md p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div>
