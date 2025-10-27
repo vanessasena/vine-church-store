@@ -34,7 +34,7 @@ function OrdersPageContent() {
   const [showEditOrder, setShowEditOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
-  const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('all');
+  const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
 
   useEffect(() => {
     fetchData();
@@ -225,7 +225,7 @@ function OrdersPageContent() {
     const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
       const currentItem = orderItem.item;
       const isCurrentlyCustomPrice = currentItem?.has_custom_price || false;
-      
+
       return {
         id: orderItem.item_id,
         name: orderItem.item_name_at_time,
