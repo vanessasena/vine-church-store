@@ -11,7 +11,8 @@ export default function Header() {
   const { user, signOut } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -20,7 +21,11 @@ export default function Header() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInsideDesktop = desktopDropdownRef.current && desktopDropdownRef.current.contains(target);
+      const clickedInsideMobile = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
+
+      if (!clickedInsideDesktop && !clickedInsideMobile) {
         setIsDropdownOpen(false);
       }
     };
@@ -37,11 +42,17 @@ export default function Header() {
   }
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = '/login';
-  };
+    try {
+      setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
 
-  const toggleMobileMenu = () => {
+      await signOut();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      window.location.href = '/login';
+    }
+  };  const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
@@ -120,7 +131,7 @@ export default function Header() {
 
             {/* Desktop Account Menu */}
             {user && (
-              <div className="relative ml-4 pl-4 border-l border-gray-300" ref={dropdownRef}>
+              <div className="relative ml-4 pl-4 border-l border-gray-300" ref={desktopDropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -152,7 +163,11 @@ export default function Header() {
                         <p className="text-sm text-gray-600 truncate">{user.email}</p>
                       </div>
                       <button
-                        onClick={handleSignOut}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSignOut();
+                        }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         Sign Out
@@ -168,7 +183,7 @@ export default function Header() {
           <div className="md:hidden flex items-center gap-2">
             {/* Mobile Account Icon */}
             {user && (
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={mobileDropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -199,7 +214,11 @@ export default function Header() {
                         <p className="text-sm text-gray-600 truncate">{user.email}</p>
                       </div>
                       <button
-                        onClick={handleSignOut}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSignOut();
+                        }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         Sign Out
