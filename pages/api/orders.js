@@ -18,7 +18,7 @@ export default async function handler(req, res) {
               )
             )
           `)
-          .order('created_at', { ascending: false });
+          .order('customer_name', { ascending: true });
 
         if (error) throw error;
         return res.status(200).json(data);

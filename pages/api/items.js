@@ -13,7 +13,8 @@ export default async function handler(req, res) {
             *,
             category:categories(*)
           `)
-          .order('created_at', { ascending: false });
+          .order('name', { ascending: true })
+          .order('name', { referencedTable: 'categories', ascending: true });
 
         if (error) throw error;
         return res.status(200).json(data);
