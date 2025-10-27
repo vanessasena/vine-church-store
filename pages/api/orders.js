@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('orders')
           .select(`
             *,
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Create order
-        const { data: orderData, error: orderError } = await supabase
+        const { data: orderData, error: orderError } = await supabaseAdmin
           .from('orders')
           .insert([{ customer_name, total_cost, is_paid: false }])
           .select()
@@ -55,14 +55,14 @@ export default async function handler(req, res) {
           price_at_time: item.price
         }));
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseAdmin
           .from('order_items')
           .insert(orderItems);
 
         if (itemsError) throw itemsError;
 
         // Fetch complete order data
-        const { data: completeOrder, error: fetchError } = await supabase
+        const { data: completeOrder, error: fetchError } = await supabaseAdmin
           .from('orders')
           .select(`
             *,
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
           updateData.payment_type = null;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('orders')
           .update(updateData)
           .eq('id', id)
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
         }
 
         // Check if order is paid
-        const { data: orderCheck, error: checkError } = await supabase
+        const { data: orderCheck, error: checkError } = await supabaseAdmin
           .from('orders')
           .select('is_paid')
           .eq('id', id)
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
         const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Update order total
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
           .from('orders')
           .update({ total_cost })
           .eq('id', id);
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
         if (updateError) throw updateError;
 
         // Delete existing order items
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await supabaseAdmin
           .from('order_items')
           .delete()
           .eq('order_id', id);
@@ -168,14 +168,14 @@ export default async function handler(req, res) {
           price_at_time: item.price
         }));
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseAdmin
           .from('order_items')
           .insert(orderItems);
 
         if (itemsError) throw itemsError;
 
         // Fetch complete order data
-        const { data: completeOrder, error: fetchError } = await supabase
+        const { data: completeOrder, error: fetchError } = await supabaseAdmin
           .from('orders')
           .select(`
             *,
@@ -206,7 +206,7 @@ export default async function handler(req, res) {
         }
 
         // Delete order items first
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseAdmin
           .from('order_items')
           .delete()
           .eq('order_id', id);
@@ -214,7 +214,7 @@ export default async function handler(req, res) {
         if (itemsError) throw itemsError;
 
         // Delete order
-        const { error: orderError } = await supabase
+        const { error: orderError } = await supabaseAdmin
           .from('orders')
           .delete()
           .eq('id', id);

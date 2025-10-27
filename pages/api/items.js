@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Price is required for non-custom-price items' });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('items')
           .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false }])
           .select(`
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Price is required for non-custom-price items' });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('items')
           .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false })
           .eq('id', id)
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Item ID is required' });
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('items')
           .delete()
           .eq('id', id);

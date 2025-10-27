@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { method, query } = req;
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const { month, year } = query;
 
     // Build the query
-    let supabaseQuery = supabase
+    let supabaseQuery = supabaseAdmin
       .from('orders')
       .select(`
         *,
