@@ -35,7 +35,7 @@ function OrdersPageContent() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
-  
+
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,28 +43,35 @@ function OrdersPageContent() {
   const [pageSize, setPageSize] = useState(10);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('customer_name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize, startDate, endDate]);
+  }, [currentPage, pageSize, startDate, endDate, orderFilter, sortBy, sortOrder]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Build query params for orders
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
+        sortBy: sortBy,
+        sortOrder: sortOrder,
       });
-      
+
       if (startDate) {
         params.append('startDate', startDate);
       }
       if (endDate) {
         params.append('endDate', endDate);
       }
-      
+      if (orderFilter === 'unpaid') {
+        params.append('filter', 'unpaid');
+      }
+
       const [itemsRes, ordersRes] = await Promise.all([
         fetch('/api/items'),
         fetch(`/api/orders?${params.toString()}`),
@@ -74,7 +81,7 @@ function OrdersPageContent() {
       const ordersData = await ordersRes.json();
 
       setItems(itemsData);
-      
+
       // Handle new API response format
       if (ordersData.orders) {
         setOrders(ordersData.orders);
@@ -176,6 +183,10 @@ function OrdersPageContent() {
         setCart([]);
         setCustomerName('');
         setShowNewOrder(false);
+        // Sort by date descending to show new order at top
+        setSortBy('date');
+        setSortOrder('desc');
+        setCurrentPage(1);
         fetchData();
       }
     } catch (error) {
@@ -349,6 +360,10 @@ function OrdersPageContent() {
         setEditCart([]);
         setEditingOrder(null);
         setShowEditOrder(false);
+        // Sort by date descending to show updated order at top
+        setSortBy('date');
+        setSortOrder('desc');
+        setCurrentPage(1);
         fetchData();
       } else {
         const error = await response.json();
@@ -360,15 +375,21 @@ function OrdersPageContent() {
     }
   };
 
-  const getFilteredOrders = () => {
-    if (orderFilter === 'unpaid') {
-      return orders.filter(order => !order.is_paid);
+  const handleFilterChange = (newFilter: 'all' | 'unpaid') => {
+    setOrderFilter(newFilter);
+    setCurrentPage(1); // Reset to first page when changing filter
+  };
+
+  const handleSortChange = (newSortBy: 'customer_name' | 'date', newSortOrder?: 'asc' | 'desc') => {
+    setSortBy(newSortBy);
+    if (newSortOrder) {
+      setSortOrder(newSortOrder);
     }
-    return orders;
+    setCurrentPage(1); // Reset to first page when changing sort
   };
 
   const getDisplayedOrdersTotal = () => {
-    return getFilteredOrders().reduce((sum, order) => sum + order.total_cost, 0);
+    return orders.reduce((sum, order) => sum + order.total_cost, 0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -598,29 +619,63 @@ function OrdersPageContent() {
         )}
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold">Order History</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setOrderFilter('all')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  orderFilter === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                All Orders
-              </button>
-              <button
-                onClick={() => setOrderFilter('unpaid')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  orderFilter === 'unpaid'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Unpaid Only
-              </button>
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Order History</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleFilterChange('all')}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    orderFilter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  All Orders
+                </button>
+                <button
+                  onClick={() => handleFilterChange('unpaid')}
+                  className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                    orderFilter === 'unpaid'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Unpaid Only
+                </button>
+              </div>
+            </div>
+
+            {/* Sorting Controls */}
+            <div className="flex flex-wrap gap-3 items-center justify-between p-3 bg-gray-50 rounded-md">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value as 'customer_name' | 'date')}
+                  className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="customer_name">Customer Name</option>
+                  <option value="date">Date Created</option>
+                </select>
+
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortChange(sortBy, e.target.value as 'asc' | 'desc')}
+                  className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="asc">
+                    {sortBy === 'customer_name' ? 'A to Z' : 'Oldest First'}
+                  </option>
+                  <option value="desc">
+                    {sortBy === 'customer_name' ? 'Z to A' : 'Newest First'}
+                  </option>
+                </select>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                Showing {orders.length} of {totalCount} orders
+              </div>
             </div>
           </div>
 
@@ -670,30 +725,30 @@ function OrdersPageContent() {
           </div>
 
           {/* Totals Display */}
-          <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
+          {/* <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-semibold text-gray-700">
                   {orderFilter === 'unpaid' ? 'Unpaid Orders Total' : 'Displayed Orders Total'}
                 </h3>
                 <p className="text-xs text-gray-600">
-                  Showing {getFilteredOrders().length} of {totalCount} total orders
+                  Showing {orders.length} of {totalCount} total orders
                 </p>
               </div>
               <div className="text-2xl font-bold text-green-600">
                 ${getDisplayedOrdersTotal().toFixed(2)}
               </div>
             </div>
-          </div>
+          </div> */}
 
-          {getFilteredOrders().length === 0 ? (
+          {orders.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
               {orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
             </p>
           ) : (
             <>
               <div className="space-y-4">
-                {getFilteredOrders().map((order) => (
+                {orders.map((order) => (
                   <div key={order.id} className="border border-gray-200 rounded-md p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>

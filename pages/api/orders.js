@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { page = '1', limit = '10', startDate, endDate } = req.query;
+        const { page = '1', limit = '10', startDate, endDate, filter, sortBy = 'customer_name', sortOrder = 'asc' } = req.query;
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
@@ -25,6 +25,11 @@ export default async function handler(req, res) {
             )
           `, { count: 'exact' });
 
+        // Apply payment status filter
+        if (filter === 'unpaid') {
+          query = query.eq('is_paid', false);
+        }
+
         // Apply date filters
         if (startDate) {
           query = query.gte('created_at', startDate);
@@ -36,15 +41,17 @@ export default async function handler(req, res) {
           query = query.lt('created_at', endDateTime.toISOString());
         }
 
-        // Apply ordering and pagination
+        // Apply ordering based on sortBy parameter
+        const orderColumn = sortBy === 'date' ? 'created_at' : 'customer_name';
+        const ascending = sortOrder === 'asc';
         query = query
-          .order('created_at', { ascending: false })
+          .order(orderColumn, { ascending })
           .range(offset, offset + limitNum - 1);
 
         const { data, error, count } = await query;
 
         if (error) throw error;
-        
+
         return res.status(200).json({
           orders: data,
           totalCount: count,
