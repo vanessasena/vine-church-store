@@ -35,23 +35,55 @@ function OrdersPageContent() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
+  
+  // Pagination and filtering state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage, pageSize, startDate, endDate]);
 
   const fetchData = async () => {
     try {
+      setLoading(true);
+      
+      // Build query params for orders
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      });
+      
+      if (startDate) {
+        params.append('startDate', startDate);
+      }
+      if (endDate) {
+        params.append('endDate', endDate);
+      }
+      
       const [itemsRes, ordersRes] = await Promise.all([
         fetch('/api/items'),
-        fetch('/api/orders'),
+        fetch(`/api/orders?${params.toString()}`),
       ]);
 
       const itemsData = await itemsRes.json();
       const ordersData = await ordersRes.json();
 
       setItems(itemsData);
-      setOrders(ordersData);
+      
+      // Handle new API response format
+      if (ordersData.orders) {
+        setOrders(ordersData.orders);
+        setTotalPages(ordersData.totalPages || 1);
+        setTotalCount(ordersData.totalCount || 0);
+      } else {
+        // Fallback for old format
+        setOrders(ordersData);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -335,6 +367,27 @@ function OrdersPageContent() {
     return orders;
   };
 
+  const getDisplayedOrdersTotal = () => {
+    return getFilteredOrders().reduce((sum, order) => sum + order.total_cost, 0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleDateFilterApply = () => {
+    setCurrentPage(1); // Reset to first page when applying filters
+    fetchData();
+  };
+
+  const handleClearDateFilter = () => {
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -570,96 +623,216 @@ function OrdersPageContent() {
               </button>
             </div>
           </div>
+
+          {/* Date Filter Section */}
+          <div className="mb-4 p-4 bg-gray-50 rounded-md">
+            <h3 className="text-sm font-semibold mb-3 text-gray-700">Filter by Date</h3>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDateFilterApply}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Apply
+                </button>
+                {(startDate || endDate) && (
+                  <button
+                    onClick={handleClearDateFilter}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Totals Display */}
+          <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700">
+                  {orderFilter === 'unpaid' ? 'Unpaid Orders Total' : 'Displayed Orders Total'}
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Showing {getFilteredOrders().length} of {totalCount} total orders
+                </p>
+              </div>
+              <div className="text-2xl font-bold text-green-600">
+                ${getDisplayedOrdersTotal().toFixed(2)}
+              </div>
+            </div>
+          </div>
+
           {getFilteredOrders().length === 0 ? (
             <p className="text-gray-500 text-center py-8">
               {orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
             </p>
           ) : (
-            <div className="space-y-4">
-              {getFilteredOrders().map((order) => (
-                <div key={order.id} className="border border-gray-200 rounded-md p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="text-lg font-semibold">{order.customer_name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {new Date(order.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-green-600">
-                        ${order.total_cost.toFixed(2)}
+            <>
+              <div className="space-y-4">
+                {getFilteredOrders().map((order) => (
+                  <div key={order.id} className="border border-gray-200 rounded-md p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold">{order.customer_name}</h3>
+                        <p className="text-sm text-gray-600">
+                          {new Date(order.created_at).toLocaleString()}
+                        </p>
                       </div>
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-green-600">
+                          ${order.total_cost.toFixed(2)}
+                        </div>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                            order.is_paid
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {order.is_paid ? 'Paid' : 'Unpaid'}
+                        </span>
+                        {order.is_paid && order.payment_type && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            via {order.payment_type}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {order.order_items && order.order_items.length > 0 && (
+                      <div className="mb-3">
+                        <h4 className="text-sm font-semibold mb-1">Items:</h4>
+                        <ul className="text-sm text-gray-700">
+                          {order.order_items.map((orderItem) => (
+                            <li key={orderItem.id} className="flex items-center justify-between py-1">
+                              <div className="flex items-center gap-2">
+                                <span>
+                                  {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'}
+                                </span>
+                                {orderItem.item?.category?.name && (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                    {orderItem.item.category.name}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-medium">
+                                ${(orderItem.price_at_time * orderItem.quantity).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      {!order.is_paid && (
+                        <button
+                          onClick={() => startEditOrder(order)}
+                          className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      <button
+                        onClick={() => togglePaymentStatus(order.id, order.is_paid)}
+                        className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                           order.is_paid
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-gray-500 text-white hover:bg-gray-600'
+                            : 'bg-green-500 text-white hover:bg-green-600'
                         }`}
                       >
-                        {order.is_paid ? 'Paid' : 'Unpaid'}
-                      </span>
-                      {order.is_paid && order.payment_type && (
-                        <div className="text-xs text-gray-600 mt-1">
-                          via {order.payment_type}
-                        </div>
-                      )}
+                        Mark as {order.is_paid ? 'Unpaid' : 'Paid'}
+                      </button>
+                      <button
+                        onClick={() => deleteOrder(order.id)}
+                        className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  {order.order_items && order.order_items.length > 0 && (
-                    <div className="mb-3">
-                      <h4 className="text-sm font-semibold mb-1">Items:</h4>
-                      <ul className="text-sm text-gray-700">
-                        {order.order_items.map((orderItem) => (
-                          <li key={orderItem.id} className="flex items-center justify-between py-1">
-                            <div className="flex items-center gap-2">
-                              <span>
-                                {orderItem.quantity}x {orderItem.item_name_at_time || 'Unknown Item'}
-                              </span>
-                              {orderItem.item?.category?.name && (
-                                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                                  {orderItem.item.category.name}
-                                </span>
-                              )}
-                            </div>
-                            <span className="font-medium">
-                              ${(orderItem.price_at_time * orderItem.quantity).toFixed(2)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </div>
                   <div className="flex gap-2">
-                    {!order.is_paid && (
-                      <button
-                        onClick={() => startEditOrder(order)}
-                        className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
-                      >
-                        Edit
-                      </button>
-                    )}
                     <button
-                      onClick={() => togglePaymentStatus(order.id, order.is_paid)}
-                      className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-                        order.is_paid
-                          ? 'bg-gray-500 text-white hover:bg-gray-600'
-                          : 'bg-green-500 text-white hover:bg-green-600'
-                      }`}
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Mark as {order.is_paid ? 'Unpaid' : 'Paid'}
+                      First
                     </button>
                     <button
-                      onClick={() => deleteOrder(order.id)}
-                      className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Delete
+                      Previous
                     </button>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Last
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Per page:</label>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(parseInt(e.target.value, 10));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                    </select>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
 

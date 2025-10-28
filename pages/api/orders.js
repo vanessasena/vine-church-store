@@ -6,7 +6,13 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { data, error } = await supabaseAdmin
+        const { page = '1', limit = '10', startDate, endDate } = req.query;
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const offset = (pageNum - 1) * limitNum;
+
+        // Build query
+        let query = supabaseAdmin
           .from('orders')
           .select(`
             *,
@@ -17,11 +23,35 @@ export default async function handler(req, res) {
                 category:categories(*)
               )
             )
-          `)
-          .order('customer_name', { ascending: true });
+          `, { count: 'exact' });
+
+        // Apply date filters
+        if (startDate) {
+          query = query.gte('created_at', startDate);
+        }
+        if (endDate) {
+          // Add one day to endDate to include the entire day
+          const endDateTime = new Date(endDate);
+          endDateTime.setDate(endDateTime.getDate() + 1);
+          query = query.lt('created_at', endDateTime.toISOString());
+        }
+
+        // Apply ordering and pagination
+        query = query
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limitNum - 1);
+
+        const { data, error, count } = await query;
 
         if (error) throw error;
-        return res.status(200).json(data);
+        
+        return res.status(200).json({
+          orders: data,
+          totalCount: count,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(count / limitNum)
+        });
       } catch (error) {
         return res.status(500).json({ error: error.message });
       }
