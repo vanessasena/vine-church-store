@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { page = '1', limit = '10', startDate, endDate } = req.query;
+        const { page = '1', limit = '10', startDate, endDate, filter } = req.query;
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
@@ -24,6 +24,11 @@ export default async function handler(req, res) {
               )
             )
           `, { count: 'exact' });
+
+        // Apply payment status filter
+        if (filter === 'unpaid') {
+          query = query.eq('is_paid', false);
+        }
 
         // Apply date filters
         if (startDate) {

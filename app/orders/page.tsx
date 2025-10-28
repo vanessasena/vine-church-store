@@ -46,7 +46,7 @@ function OrdersPageContent() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize, startDate, endDate]);
+  }, [currentPage, pageSize, startDate, endDate, orderFilter]);
 
   const fetchData = async () => {
     try {
@@ -63,6 +63,9 @@ function OrdersPageContent() {
       }
       if (endDate) {
         params.append('endDate', endDate);
+      }
+      if (orderFilter === 'unpaid') {
+        params.append('filter', 'unpaid');
       }
 
       const [itemsRes, ordersRes] = await Promise.all([
@@ -360,15 +363,13 @@ function OrdersPageContent() {
     }
   };
 
-  const getFilteredOrders = () => {
-    if (orderFilter === 'unpaid') {
-      return orders.filter(order => !order.is_paid);
-    }
-    return orders;
+  const handleFilterChange = (newFilter: 'all' | 'unpaid') => {
+    setOrderFilter(newFilter);
+    setCurrentPage(1); // Reset to first page when changing filter
   };
 
   const getDisplayedOrdersTotal = () => {
-    return getFilteredOrders().reduce((sum, order) => sum + order.total_cost, 0);
+    return orders.reduce((sum, order) => sum + order.total_cost, 0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -602,7 +603,7 @@ function OrdersPageContent() {
             <h2 className="text-2xl font-semibold">Order History</h2>
             <div className="flex gap-2">
               <button
-                onClick={() => setOrderFilter('all')}
+                onClick={() => handleFilterChange('all')}
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
                   orderFilter === 'all'
                     ? 'bg-blue-600 text-white'
@@ -612,7 +613,7 @@ function OrdersPageContent() {
                 All Orders
               </button>
               <button
-                onClick={() => setOrderFilter('unpaid')}
+                onClick={() => handleFilterChange('unpaid')}
                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
                   orderFilter === 'unpaid'
                     ? 'bg-blue-600 text-white'
@@ -677,7 +678,7 @@ function OrdersPageContent() {
                   {orderFilter === 'unpaid' ? 'Unpaid Orders Total' : 'Displayed Orders Total'}
                 </h3>
                 <p className="text-xs text-gray-600">
-                  Showing {getFilteredOrders().length} of {totalCount} total orders
+                  Showing {orders.length} of {totalCount} total orders
                 </p>
               </div>
               <div className="text-2xl font-bold text-green-600">
@@ -686,14 +687,14 @@ function OrdersPageContent() {
             </div>
           </div> */}
 
-          {getFilteredOrders().length === 0 ? (
+          {orders.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
               {orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
             </p>
           ) : (
             <>
               <div className="space-y-4">
-                {getFilteredOrders().map((order) => (
+                {orders.map((order) => (
                   <div key={order.id} className="border border-gray-200 rounded-md p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
