@@ -61,7 +61,6 @@ ADMIN_EMAIL=admin@vinechurch.com
 
 **For new installations:**
 1. Run the SQL in `database-setup.sql` in your Supabase SQL editor
-2. Run the SQL in `database-migration-auth.sql` to set up authentication tables and policies
 
 **For existing installations (migration required):**
 1. First run the migration script `database-migration-category-table.sql` in your Supabase SQL editor
