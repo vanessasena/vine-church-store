@@ -35,7 +35,7 @@ function OrdersPageContent() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
-  
+
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -51,20 +51,20 @@ function OrdersPageContent() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Build query params for orders
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
       });
-      
+
       if (startDate) {
         params.append('startDate', startDate);
       }
       if (endDate) {
         params.append('endDate', endDate);
       }
-      
+
       const [itemsRes, ordersRes] = await Promise.all([
         fetch('/api/items'),
         fetch(`/api/orders?${params.toString()}`),
@@ -74,7 +74,7 @@ function OrdersPageContent() {
       const ordersData = await ordersRes.json();
 
       setItems(itemsData);
-      
+
       // Handle new API response format
       if (ordersData.orders) {
         setOrders(ordersData.orders);
@@ -670,7 +670,7 @@ function OrdersPageContent() {
           </div>
 
           {/* Totals Display */}
-          <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
+          {/* <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-semibold text-gray-700">
@@ -684,7 +684,7 @@ function OrdersPageContent() {
                 ${getDisplayedOrdersTotal().toFixed(2)}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {getFilteredOrders().length === 0 ? (
             <p className="text-gray-500 text-center py-8">

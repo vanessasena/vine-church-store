@@ -38,13 +38,13 @@ export default async function handler(req, res) {
 
         // Apply ordering and pagination
         query = query
-          .order('created_at', { ascending: false })
+          .order('customer_name', { ascending: true })
           .range(offset, offset + limitNum - 1);
 
         const { data, error, count } = await query;
 
         if (error) throw error;
-        
+
         return res.status(200).json({
           orders: data,
           totalCount: count,
