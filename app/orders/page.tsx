@@ -680,7 +680,7 @@ function OrdersPageContent() {
           </div>
 
           {/* Date Filter Section */}
-          <div className="mb-4 p-4 bg-gray-50 rounded-md">
+          {/* <div className="mb-4 p-4 bg-gray-50 rounded-md">
             <h3 className="text-sm font-semibold mb-3 text-gray-700">Filter by Date</h3>
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[200px]">
@@ -722,7 +722,7 @@ function OrdersPageContent() {
                 )}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Totals Display */}
           {/* <div className="mb-4 p-4 bg-green-50 rounded-md border border-green-200">
@@ -834,7 +834,7 @@ function OrdersPageContent() {
               </div>
 
               {/* Pagination Controls */}
-              {totalPages > 1 && (
+              {totalPages > 0 && (
                 <div className="mt-6 flex justify-between items-center">
                   <div className="text-sm text-gray-600">
                     Page {currentPage} of {totalPages}
