@@ -120,13 +120,12 @@ function ItemsPageContent({
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = fileName;
 
       const { data, error } = await supabase.storage
         .from('item-images')
-        .upload(filePath, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
         });
@@ -139,7 +138,7 @@ function ItemsPageContent({
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('item-images')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       return urlData.publicUrl;
     } catch (error) {
