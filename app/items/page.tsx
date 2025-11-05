@@ -4,14 +4,17 @@ import { useState, useEffect, useRef } from 'react';
 import { Item } from '@/lib/types';
 import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import { supabase } from '@/lib/supabase';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
+  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   return (
     <ProtectedRoute>
@@ -28,6 +31,10 @@ export default function ItemsPage() {
         setCategories={setCategories}
         selectedCategoryFilter={selectedCategoryFilter}
         setSelectedCategoryFilter={setSelectedCategoryFilter}
+        imageFile={imageFile}
+        setImageFile={setImageFile}
+        imagePreview={imagePreview}
+        setImagePreview={setImagePreview}
       />
     </ProtectedRoute>
   );
@@ -36,7 +43,8 @@ export default function ItemsPage() {
 function ItemsPageContent({
   items, setItems, loading, setLoading, formData, setFormData,
   editingId, setEditingId, categories, setCategories,
-  selectedCategoryFilter, setSelectedCategoryFilter
+  selectedCategoryFilter, setSelectedCategoryFilter,
+  imageFile, setImageFile, imagePreview, setImagePreview
 }: {
   items: Item[];
   setItems: (items: Item[]) => void;
@@ -50,6 +58,10 @@ function ItemsPageContent({
   setCategories: (categories: { id: string; name: string }[]) => void;
   selectedCategoryFilter: string;
   setSelectedCategoryFilter: (filter: string) => void;
+  imageFile: File | null;
+  setImageFile: (file: File | null) => void;
+  imagePreview: string;
+  setImagePreview: (preview: string) => void;
 }) {
   const refItemName = useRef<HTMLInputElement>(null);
 
@@ -80,6 +92,62 @@ function ItemsPageContent({
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      setImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = fileName;
+
+      const { data, error } = await supabase.storage
+        .from('item-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Error uploading image:', error);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('item-images')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -88,11 +156,25 @@ function ItemsPageContent({
       return;
     }
 
+    let imageUrl = formData.imageUrl;
+
+    // Upload new image if file is selected
+    if (imageFile) {
+      const uploadedUrl = await uploadImage(imageFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      } else {
+        alert('Failed to upload image. Please try again.');
+        return;
+      }
+    }
+
     const itemData = {
       name: formData.name,
       category_id: formData.categoryId,
       price: formData.hasCustomPrice ? null : parseFloat(formData.price),
       has_custom_price: formData.hasCustomPrice,
+      image_url: imageUrl,
     };
 
     try {
@@ -114,7 +196,9 @@ function ItemsPageContent({
         });
       }
 
-      setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
+      setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
+      setImageFile(null);
+      setImagePreview('');
       fetchItems(); // This will now also update the categories list
     } catch (error) {
       console.error('Error saving item:', error);
@@ -128,7 +212,10 @@ function ItemsPageContent({
       categoryId: item.category_id,
       price: item.price?.toString() || '',
       hasCustomPrice: item.has_custom_price || false,
+      imageUrl: item.image_url || '',
     });
+    setImagePreview(item.image_url || '');
+    setImageFile(null);
     setEditingId(item.id);
     refItemName.current?.focus();
   };
@@ -150,7 +237,9 @@ function ItemsPageContent({
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false });
+    setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
+    setImageFile(null);
+    setImagePreview('');
   };
 
   // Filter items based on selected category
@@ -256,6 +345,27 @@ function ItemsPageContent({
                   </div>
                 )}
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Image (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-md border border-gray-300"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -320,6 +430,7 @@ function ItemsPageContent({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Image</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
@@ -329,6 +440,19 @@ function ItemsPageContent({
                     <tbody>
                       {filteredItems.map((item) => (
                         <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-12 h-12 object-cover rounded-md border border-gray-300"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                                No image
+                              </div>
+                            )}
+                          </td>
                           <td className="py-3 px-4">{item.name}</td>
                           <td className="py-3 px-4">
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">

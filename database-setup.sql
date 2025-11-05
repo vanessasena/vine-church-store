@@ -15,6 +15,7 @@ CREATE TABLE items (
   category_id UUID NOT NULL REFERENCES categories(id),
   price DECIMAL(10, 2),
   has_custom_price BOOLEAN DEFAULT FALSE,
+  image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
