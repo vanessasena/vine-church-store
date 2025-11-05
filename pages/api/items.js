@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category_id, price, has_custom_price } = req.body;
+        const { name, category_id, price, has_custom_price, image_url } = req.body;
 
         if (!name || !category_id) {
           return res.status(400).json({ error: 'Missing required fields' });
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabaseAdmin
           .from('items')
-          .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false }])
+          .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null }])
           .select(`
             *,
             category:categories(*)
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category_id, price, has_custom_price } = req.body;
+        const { id, name, category_id, price, has_custom_price, image_url } = req.body;
 
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabaseAdmin
           .from('items')
-          .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false })
+          .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null })
           .eq('id', id)
           .select(`
             *,

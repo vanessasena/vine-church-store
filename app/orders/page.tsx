@@ -500,6 +500,13 @@ function OrdersPageContent() {
                       onClick={() => addToCart(item)}
                       className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
                     >
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-24 object-cover rounded-md mb-2"
+                        />
+                      )}
                       <div className="font-medium">{item.name}</div>
                       <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
                       <div className="text-sm font-semibold text-green-600">
@@ -1020,6 +1027,13 @@ function OrdersPageContent() {
                         onClick={() => addToEditCart(item)}
                         className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
                       >
+                        {item.image_url && (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-24 object-cover rounded-md mb-2"
+                          />
+                        )}
                         <div className="font-medium">{item.name}</div>
                         <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
                         <div className="text-sm font-semibold text-green-600">
