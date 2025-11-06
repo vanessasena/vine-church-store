@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     // Aggregate by date
     const byDate = {};
     orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = new Date(order.created_at).toLocaleDateString('en-US');
       if (!byDate[date]) {
         byDate[date] = { total: 0, count: 0 };
       }
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     // Aggregate items by date
     const itemsByDate = {};
     orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = new Date(order.created_at).toLocaleDateString('en-US');
       if (!itemsByDate[date]) {
         itemsByDate[date] = {};
       }
