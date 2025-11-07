@@ -28,13 +28,25 @@ export default function ReportsPage() {
 function ReportsPageContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('');
+
+  // Set current month and year as default
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<string>((currentDate.getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = useState<string>(currentDate.getFullYear().toString());
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   useEffect(() => {
     fetchReportData();
   }, [selectedMonth, selectedYear]);
+
+  // Set the most recent date when reportData is loaded
+  useEffect(() => {
+    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0) {
+      const dates = Object.keys(reportData.itemsByDate);
+      const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+      setSelectedDate(mostRecentDate);
+    }
+  }, [reportData]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -161,134 +173,12 @@ function ReportsPageContent() {
           )}
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Total Revenue</div>
-            <div className="text-3xl font-bold text-green-600">
-              ${reportData.summary.totalRevenue.toFixed(2)}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Total Orders</div>
-            <div className="text-3xl font-bold text-blue-600">
-              {reportData.summary.totalOrders}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Paid Orders</div>
-            <div className="text-3xl font-bold text-green-600">
-              {reportData.summary.paidOrders}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Unpaid Orders</div>
-            <div className="text-3xl font-bold text-red-600">
-              {reportData.summary.unpaidOrders}
-            </div>
-          </div>
-        </div>
-
         {/* Reports Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Orders by Date */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Orders by Date</h2>
-            {Object.keys(reportData.byDate).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(reportData.byDate)
-                  .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-                  .map(([date, data]) => (
-                    <div key={date} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                      <div>
-                        <div className="font-medium text-gray-900">{date}</div>
-                        <div className="text-sm text-gray-600">{data.count} orders</div>
-                      </div>
-                      <div className="text-lg font-bold text-green-600">
-                        ${data.total.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {/* Orders by Category */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Sales by Category</h2>
-            {Object.keys(reportData.byCategory).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(reportData.byCategory)
-                  .sort((a, b) => b[1].total - a[1].total)
-                  .map(([category, data]) => (
-                    <div key={category} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                      <div>
-                        <div className="font-medium text-gray-900">{category}</div>
-                        <div className="text-sm text-gray-600">{data.count} items sold</div>
-                      </div>
-                      <div className="text-lg font-bold text-blue-600">
-                        ${data.total.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {/* Orders by Payment Status */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Orders by Payment Status</h2>
-            <div className="space-y-3">
-              {Object.entries(reportData.byPaymentType).map(([status, data]) => (
-                <div key={status} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                  <div>
-                    <div className="font-medium text-gray-900">{status}</div>
-                    <div className="text-sm text-gray-600">{data.count} orders</div>
-                  </div>
-                  <div className={`text-lg font-bold ${status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
-                    ${data.total.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Orders by Payment Method */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Sales by Payment Method</h2>
-            {Object.keys(reportData.byPaymentMethod).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No paid orders yet</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(reportData.byPaymentMethod)
-                  .sort((a, b) => b[1].total - a[1].total)
-                  .map(([method, data]) => (
-                    <div key={method} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                      <div>
-                        <div className="font-medium text-gray-900">{method}</div>
-                        <div className="text-sm text-gray-600">{data.count} orders</div>
-                      </div>
-                      <div className="text-lg font-bold text-purple-600">
-                        ${data.total.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Items Sold by Date */}
+          {/* Items Sold by Date */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-2xl font-semibold mb-4 text-gray-900">Items Sold by Date</h2>
-          
+
           {Object.keys(reportData.itemsByDate).length === 0 ? (
             <p className="text-gray-500 text-center py-4">No data available</p>
           ) : (
@@ -324,8 +214,8 @@ function ReportsPageContent() {
                     {Object.entries(reportData.itemsByDate[selectedDate])
                       .sort((a, b) => b[1].revenue - a[1].revenue)
                       .map(([itemName, data]) => (
-                        <div 
-                          key={itemName} 
+                        <div
+                          key={itemName}
                           className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
                         >
                           <div>
@@ -356,6 +246,93 @@ function ReportsPageContent() {
           )}
         </div>
 
+          {/* Orders by Category */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Sales by Category
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
+            {Object.keys(reportData.byCategory).length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No data available</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(reportData.byCategory)
+                  .sort((a, b) => b[1].total - a[1].total)
+                  .map(([category, data]) => (
+                    <div key={category} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                      <div>
+                        <div className="font-medium text-gray-900">{category}</div>
+                        <div className="text-sm text-gray-600">{data.count} items sold</div>
+                      </div>
+                      <div className="text-lg font-bold text-blue-600">
+                        ${data.total.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          {/* Orders by Payment Status */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Orders by Payment Status
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
+            <div className="space-y-3">
+              {Object.entries(reportData.byPaymentType).map(([status, data]) => (
+                <div key={status} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <div className="font-medium text-gray-900">{status}</div>
+                    <div className="text-sm text-gray-600">{data.count} orders</div>
+                  </div>
+                  <div className={`text-lg font-bold ${status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
+                    ${data.total.toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Orders by Payment Method */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Sales by Payment Method
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
+            {Object.keys(reportData.byPaymentMethod).length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No paid orders yet</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(reportData.byPaymentMethod)
+                  .sort((a, b) => b[1].total - a[1].total)
+                  .map(([method, data]) => (
+                    <div key={method} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                      <div>
+                        <div className="font-medium text-gray-900">{method}</div>
+                        <div className="text-sm text-gray-600">{data.count} orders</div>
+                      </div>
+                      <div className="text-lg font-bold text-purple-600">
+                        ${data.total.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
