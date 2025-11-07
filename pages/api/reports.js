@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     // Aggregate by date
     const byDate = {};
     orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = new Date(order.created_at).toLocaleDateString('en-US');
       if (!byDate[date]) {
         byDate[date] = { total: 0, count: 0 };
       }
@@ -93,6 +93,29 @@ export default async function handler(req, res) {
       }
     });
 
+    // Aggregate items by date
+    const itemsByDate = {};
+    orders.forEach(order => {
+      const date = new Date(order.created_at).toLocaleDateString('en-US');
+      if (!itemsByDate[date]) {
+        itemsByDate[date] = {};
+      }
+      
+      if (order.order_items && order.order_items.length > 0) {
+        order.order_items.forEach(item => {
+          const itemName = item.item_name_at_time;
+          if (!itemsByDate[date][itemName]) {
+            itemsByDate[date][itemName] = {
+              quantity: 0,
+              revenue: 0
+            };
+          }
+          itemsByDate[date][itemName].quantity += item.quantity;
+          itemsByDate[date][itemName].revenue += item.price_at_time * item.quantity;
+        });
+      }
+    });
+
     // Calculate overall totals
     const totalRevenue = orders.reduce((sum, order) => sum + order.total_cost, 0);
     const totalOrders = orders.length;
@@ -109,7 +132,8 @@ export default async function handler(req, res) {
       byDate,
       byCategory,
       byPaymentType,
-      byPaymentMethod
+      byPaymentMethod,
+      itemsByDate
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });

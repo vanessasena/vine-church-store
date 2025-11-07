@@ -14,6 +14,7 @@ interface ReportData {
   byCategory: Record<string, { total: number; count: number }>;
   byPaymentType: Record<string, { total: number; count: number }>;
   byPaymentMethod: Record<string, { total: number; count: number }>;
+  itemsByDate: Record<string, Record<string, { quantity: number; revenue: number }>>;
 }
 
 export default function ReportsPage() {
@@ -29,6 +30,7 @@ function ReportsPageContent() {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   useEffect(() => {
     fetchReportData();
@@ -281,6 +283,77 @@ function ReportsPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Items Sold by Date */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900">Items Sold by Date</h2>
+          
+          {Object.keys(reportData.itemsByDate).length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No data available</p>
+          ) : (
+            <div>
+              {/* Date selector */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select a date to view items sold
+                </label>
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a date</option>
+                  {Object.keys(reportData.itemsByDate)
+                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                    .map((date) => (
+                      <option key={date} value={date}>
+                        {date}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Items breakdown for selected date */}
+              {selectedDate && reportData.itemsByDate[selectedDate] && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
+                    Items sold on {selectedDate}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(reportData.itemsByDate[selectedDate])
+                      .sort((a, b) => b[1].revenue - a[1].revenue)
+                      .map(([itemName, data]) => (
+                        <div 
+                          key={itemName} 
+                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <div>
+                            <div className="font-medium text-gray-900">{itemName}</div>
+                            <div className="text-sm text-gray-600">
+                              Quantity sold: {data.quantity}
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            ${data.revenue.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">Total for {selectedDate}:</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        ${Object.values(reportData.itemsByDate[selectedDate])
+                          .reduce((sum, item) => sum + item.revenue, 0)
+                          .toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

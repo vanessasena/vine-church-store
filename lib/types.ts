@@ -10,6 +10,7 @@ export interface Item {
   category_id: string;
   price: number | null;
   has_custom_price: boolean;
+  image_url?: string | null;
   created_at?: string;
   category?: Category;
 }
