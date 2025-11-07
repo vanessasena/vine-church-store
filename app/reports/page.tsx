@@ -28,13 +28,25 @@ export default function ReportsPage() {
 function ReportsPageContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('');
+
+  // Set current month and year as default
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<string>((currentDate.getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = useState<string>(currentDate.getFullYear().toString());
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   useEffect(() => {
     fetchReportData();
   }, [selectedMonth, selectedYear]);
+
+  // Set the most recent date when reportData is loaded
+  useEffect(() => {
+    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0) {
+      const dates = Object.keys(reportData.itemsByDate);
+      const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+      setSelectedDate(mostRecentDate);
+    }
+  }, [reportData]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -161,62 +173,78 @@ function ReportsPageContent() {
           )}
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Total Revenue</div>
-            <div className="text-3xl font-bold text-green-600">
-              ${reportData.summary.totalRevenue.toFixed(2)}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Total Orders</div>
-            <div className="text-3xl font-bold text-blue-600">
-              {reportData.summary.totalOrders}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Paid Orders</div>
-            <div className="text-3xl font-bold text-green-600">
-              {reportData.summary.paidOrders}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">Unpaid Orders</div>
-            <div className="text-3xl font-bold text-red-600">
-              {reportData.summary.unpaidOrders}
-            </div>
-          </div>
-        </div>
-
         {/* Reports Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Orders by Date */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Orders by Date</h2>
-            {Object.keys(reportData.byDate).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(reportData.byDate)
-                  .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-                  .map(([date, data]) => (
-                    <div key={date} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                      <div>
-                        <div className="font-medium text-gray-900">{date}</div>
-                        <div className="text-sm text-gray-600">{data.count} orders</div>
-                      </div>
-                      <div className="text-lg font-bold text-green-600">
-                        ${data.total.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+          {/* Items Sold by Date */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900">Items Sold by Date</h2>
+
+          {Object.keys(reportData.itemsByDate).length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No data available</p>
+          ) : (
+            <div>
+              {/* Date selector */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select a date to view items sold
+                </label>
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a date</option>
+                  {Object.keys(reportData.itemsByDate)
+                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                    .map((date) => (
+                      <option key={date} value={date}>
+                        {date}
+                      </option>
+                    ))}
+                </select>
               </div>
-            )}
-          </div>
+
+              {/* Items breakdown for selected date */}
+              {selectedDate && reportData.itemsByDate[selectedDate] && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
+                    Items sold on {selectedDate}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(reportData.itemsByDate[selectedDate])
+                      .sort((a, b) => b[1].revenue - a[1].revenue)
+                      .map(([itemName, data]) => (
+                        <div
+                          key={itemName}
+                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <div>
+                            <div className="font-medium text-gray-900">{itemName}</div>
+                            <div className="text-sm text-gray-600">
+                              Quantity sold: {data.quantity}
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            ${data.revenue.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">Total for {selectedDate}:</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        ${Object.values(reportData.itemsByDate[selectedDate])
+                          .reduce((sum, item) => sum + item.revenue, 0)
+                          .toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
           {/* Orders by Category */}
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -284,78 +312,6 @@ function ReportsPageContent() {
             )}
           </div>
         </div>
-
-        {/* Items Sold by Date */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900">Items Sold by Date</h2>
-          
-          {Object.keys(reportData.itemsByDate).length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No data available</p>
-          ) : (
-            <div>
-              {/* Date selector */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select a date to view items sold
-                </label>
-                <select
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select a date</option>
-                  {Object.keys(reportData.itemsByDate)
-                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-                    .map((date) => (
-                      <option key={date} value={date}>
-                        {date}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Items breakdown for selected date */}
-              {selectedDate && reportData.itemsByDate[selectedDate] && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    Items sold on {selectedDate}
-                  </h3>
-                  <div className="space-y-2">
-                    {Object.entries(reportData.itemsByDate[selectedDate])
-                      .sort((a, b) => b[1].revenue - a[1].revenue)
-                      .map(([itemName, data]) => (
-                        <div 
-                          key={itemName} 
-                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                        >
-                          <div>
-                            <div className="font-medium text-gray-900">{itemName}</div>
-                            <div className="text-sm text-gray-600">
-                              Quantity sold: {data.quantity}
-                            </div>
-                          </div>
-                          <div className="text-lg font-bold text-green-600">
-                            ${data.revenue.toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Total for {selectedDate}:</span>
-                      <span className="text-xl font-bold text-blue-600">
-                        ${Object.values(reportData.itemsByDate[selectedDate])
-                          .reduce((sum, item) => sum + item.revenue, 0)
-                          .toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
       </div>
     </div>
   );
