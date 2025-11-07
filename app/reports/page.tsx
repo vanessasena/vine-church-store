@@ -248,7 +248,14 @@ function ReportsPageContent() {
 
           {/* Orders by Category */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Sales by Category</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Sales by Category
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
             {Object.keys(reportData.byCategory).length === 0 ? (
               <p className="text-gray-500 text-center py-4">No data available</p>
             ) : (
@@ -272,7 +279,14 @@ function ReportsPageContent() {
 
           {/* Orders by Payment Status */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Orders by Payment Status</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Orders by Payment Status
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
             <div className="space-y-3">
               {Object.entries(reportData.byPaymentType).map(([status, data]) => (
                 <div key={status} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
@@ -290,7 +304,14 @@ function ReportsPageContent() {
 
           {/* Orders by Payment Method */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Sales by Payment Method</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+              Sales by Payment Method
+              {selectedMonth && selectedYear && (
+                <span className="text-lg font-normal text-gray-600 ml-2">
+                  - {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+                </span>
+              )}
+            </h2>
             {Object.keys(reportData.byPaymentMethod).length === 0 ? (
               <p className="text-gray-500 text-center py-4">No paid orders yet</p>
             ) : (
