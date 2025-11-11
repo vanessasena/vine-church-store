@@ -35,6 +35,8 @@ function OrdersPageContent() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
+  const [clickedItemId, setClickedItemId] = useState<string | null>(null);
+  const [clickedEditItemId, setClickedEditItemId] = useState<string | null>(null);
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,6 +110,10 @@ function OrdersPageContent() {
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
     }
+
+    // Visual feedback: show pressed state for 500ms
+    setClickedItemId(item.id);
+    setTimeout(() => setClickedItemId(null), 500);
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
@@ -295,6 +301,10 @@ function OrdersPageContent() {
     } else {
       setEditCart([...editCart, { ...item, quantity: 1 }]);
     }
+
+    // Visual feedback: show pressed state for 500ms
+    setClickedEditItemId(item.id);
+    setTimeout(() => setClickedEditItemId(null), 500);
   };
 
   const updateEditQuantity = (itemId: string, quantity: number) => {
@@ -498,7 +508,11 @@ function OrdersPageContent() {
                       key={item.id}
                       type="button"
                       onClick={() => addToCart(item)}
-                      className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
+                      className={`p-3 border rounded-md transition-all text-left ${
+                        clickedItemId === item.id
+                          ? 'bg-green-100 border-green-500 scale-95 shadow-inner'
+                          : 'border-gray-300 hover:bg-blue-50 hover:border-blue-500'
+                      }`}
                     >
                       {item.image_url && (
                         <img
@@ -1025,7 +1039,11 @@ function OrdersPageContent() {
                         key={item.id}
                         type="button"
                         onClick={() => addToEditCart(item)}
-                        className="p-3 border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition-colors text-left"
+                        className={`p-3 border rounded-md transition-all text-left ${
+                          clickedEditItemId === item.id
+                            ? 'bg-green-100 border-green-500 scale-95 shadow-inner'
+                            : 'border-gray-300 hover:bg-blue-50 hover:border-blue-500'
+                        }`}
                       >
                         {item.image_url && (
                           <img
