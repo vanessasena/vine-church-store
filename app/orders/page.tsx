@@ -111,9 +111,9 @@ function OrdersPageContent() {
       setCart([...cart, { ...item, quantity: 1 }]);
     }
 
-    // Visual feedback: show pressed state for 500ms
+    // Visual feedback: show pressed state for 300ms
     setClickedItemId(item.id);
-    setTimeout(() => setClickedItemId(null), 500);
+    setTimeout(() => setClickedItemId(null), 300);
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
@@ -302,9 +302,9 @@ function OrdersPageContent() {
       setEditCart([...editCart, { ...item, quantity: 1 }]);
     }
 
-    // Visual feedback: show pressed state for 500ms
+    // Visual feedback: show pressed state for 300ms
     setClickedEditItemId(item.id);
-    setTimeout(() => setClickedEditItemId(null), 500);
+    setTimeout(() => setClickedEditItemId(null), 300);
   };
 
   const updateEditQuantity = (itemId: string, quantity: number) => {
