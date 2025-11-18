@@ -48,6 +48,17 @@ function OrdersPageContent() {
   const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('customer_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [customerNameFilter, setCustomerNameFilter] = useState('');
+  const [customerNameInput, setCustomerNameInput] = useState('');
+
+  // Debounce customer name filter - only apply after 2 seconds of typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCustomerNameFilter(customerNameInput);
+      setCurrentPage(1);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [customerNameInput]);
 
   useEffect(() => {
     fetchData();
@@ -709,17 +720,16 @@ function OrdersPageContent() {
                 <label className="text-sm font-medium text-gray-700">Filter by customer name:</label>
                 <input
                   type="text"
-                  value={customerNameFilter}
-                  onChange={(e) => {
-                    setCustomerNameFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  value={customerNameInput}
+                  onChange={(e) => setCustomerNameInput(e.target.value)}
                   placeholder="Search customer name..."
                   className="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  autoComplete="off"
                 />
-                {customerNameFilter && (
+                {customerNameInput && (
                   <button
                     onClick={() => {
+                      setCustomerNameInput('');
                       setCustomerNameFilter('');
                       setCurrentPage(1);
                     }}
