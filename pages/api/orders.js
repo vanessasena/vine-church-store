@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { page = '1', limit = '10', startDate, endDate, filter, sortBy = 'customer_name', sortOrder = 'asc' } = req.query;
+        const { page = '1', limit = '10', startDate, endDate, filter, sortBy = 'customer_name', sortOrder = 'asc', customerName } = req.query;
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
@@ -28,6 +28,11 @@ export default async function handler(req, res) {
         // Apply payment status filter
         if (filter === 'unpaid') {
           query = query.eq('is_paid', false);
+        }
+
+        // Apply customer name filter (case-insensitive)
+        if (customerName) {
+          query = query.ilike('customer_name', `%${customerName}%`);
         }
 
         // Apply date filters

@@ -47,10 +47,11 @@ function OrdersPageContent() {
   const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('customer_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [customerNameFilter, setCustomerNameFilter] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize, startDate, endDate, orderFilter, sortBy, sortOrder]);
+  }, [currentPage, pageSize, startDate, endDate, orderFilter, sortBy, sortOrder, customerNameFilter]);
 
   const fetchData = async () => {
     try {
@@ -72,6 +73,9 @@ function OrdersPageContent() {
       }
       if (orderFilter === 'unpaid') {
         params.append('filter', 'unpaid');
+      }
+      if (customerNameFilter) {
+        params.append('customerName', customerNameFilter);
       }
 
       const [itemsRes, ordersRes] = await Promise.all([
@@ -698,6 +702,34 @@ function OrdersPageContent() {
                 Showing {orders.length} of {totalCount} orders
               </div>
             </div>
+
+            {/* Customer Name Filter */}
+            <div className="p-3 bg-gray-50 rounded-md">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-700">Filter by customer name:</label>
+                <input
+                  type="text"
+                  value={customerNameFilter}
+                  onChange={(e) => {
+                    setCustomerNameFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search customer name..."
+                  className="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                {customerNameFilter && (
+                  <button
+                    onClick={() => {
+                      setCustomerNameFilter('');
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm font-medium"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Date Filter Section */}
@@ -775,7 +807,7 @@ function OrdersPageContent() {
                       <div>
                         <h3 className="text-lg font-semibold">{order.customer_name}</h3>
                         <p className="text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleString()}
+                          {new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit' })}
                         </p>
                       </div>
                       <div className="text-right">
