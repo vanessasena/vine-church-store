@@ -101,6 +101,9 @@ function ReportsPageContent() {
   // Helper function to get day from date string
   const getDayFromDate = (dateString: string) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 0; // Return 0 for invalid dates
+    }
     return date.getDate();
   };
 
@@ -112,7 +115,11 @@ function ReportsPageContent() {
     // Get first date to extract month and year
     const firstDate = Object.keys(reportData.itemsByDate)[0];
     const date = new Date(firstDate);
-    const monthName = monthOptions[date.getMonth()]?.label || '';
+    if (isNaN(date.getTime())) {
+      return ''; // Return empty string for invalid dates
+    }
+    const monthIndex = date.getMonth(); // Returns 0-11
+    const monthName = monthOptions.find(m => parseInt(m.value) === monthIndex + 1)?.label || '';
     const year = date.getFullYear();
     return `${monthName} ${year}`;
   };
