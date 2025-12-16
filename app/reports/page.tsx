@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 interface ReportData {
@@ -33,20 +33,22 @@ function ReportsPageContent() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>((currentDate.getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState<string>(currentDate.getFullYear().toString());
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
 
   useEffect(() => {
     fetchReportData();
+    // Clear selected dates when filters change so we can set new defaults
+    setSelectedDates([]);
   }, [selectedMonth, selectedYear]);
 
-  // Set the most recent date when reportData is loaded
+  // Set the most recent date when reportData is loaded (default selection)
   useEffect(() => {
-    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0) {
+    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0 && selectedDates.length === 0) {
       const dates = Object.keys(reportData.itemsByDate);
       const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-      setSelectedDate(mostRecentDate);
+      setSelectedDates([mostRecentDate]);
     }
-  }, [reportData]);
+  }, [reportData, selectedDates.length]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -88,6 +90,63 @@ function ReportsPageContent() {
     { value: '11', label: 'November' },
     { value: '12', label: 'December' },
   ];
+
+  // Helper function to handle multi-select dropdown change
+  const handleDateSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(e.target.selectedOptions);
+    const values = options.map(option => option.value);
+    setSelectedDates(values);
+  };
+
+  // Helper function to get day from date string
+  const getDayFromDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 0; // Return 0 for invalid dates
+    }
+    return date.getDate();
+  };
+
+  // Helper function to get month and year for display
+  const getMonthYearDisplay = () => {
+    if (!reportData || !reportData.itemsByDate || Object.keys(reportData.itemsByDate).length === 0) {
+      return '';
+    }
+    // Get first date to extract month and year
+    const firstDate = Object.keys(reportData.itemsByDate)[0];
+    const date = new Date(firstDate);
+    if (isNaN(date.getTime())) {
+      return ''; // Return empty string for invalid dates
+    }
+    const monthIndex = date.getMonth(); // Returns 0-11
+    const monthName = monthOptions.find(m => parseInt(m.value) === monthIndex + 1)?.label || '';
+    const year = date.getFullYear();
+    return `${monthName} ${year}`;
+  };
+
+  // Calculate aggregated items across selected dates (memoized for performance)
+  const aggregatedItems = useMemo(() => {
+    if (!reportData || !reportData.itemsByDate) return {};
+
+    const aggregated: Record<string, { quantity: number; revenue: number }> = {};
+
+    // Filter to only include dates that exist in current reportData
+    const validDateSet = new Set(Object.keys(reportData.itemsByDate));
+    const validDates = selectedDates.filter(date => validDateSet.has(date));
+
+    validDates.forEach(date => {
+      const dateItems = reportData.itemsByDate[date];
+      Object.entries(dateItems).forEach(([itemName, data]) => {
+        if (!aggregated[itemName]) {
+          aggregated[itemName] = { quantity: 0, revenue: 0 };
+        }
+        aggregated[itemName].quantity += data.quantity;
+        aggregated[itemName].revenue += data.revenue;
+      });
+    });
+
+    return aggregated;
+  }, [selectedDates, reportData]);
 
   if (loading) {
     return (
@@ -183,35 +242,44 @@ function ReportsPageContent() {
             <p className="text-gray-500 text-center py-4">No data available</p>
           ) : (
             <div>
-              {/* Date selector */}
+              {/* Date selector - multi-select dropdown */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select a date to view items sold
+                  Select dates to view items sold
                 </label>
                 <select
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  multiple
+                  value={selectedDates}
+                  onChange={handleDateSelectionChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  size={1}
                 >
-                  <option value="">Select a date</option>
                   {Object.keys(reportData.itemsByDate)
                     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
                     .map((date) => (
                       <option key={date} value={date}>
-                        {date}
+                        Day {getDayFromDate(date)}
                       </option>
                     ))}
                 </select>
+
+                {selectedDates.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
               </div>
 
-              {/* Items breakdown for selected date */}
-              {selectedDate && reportData.itemsByDate[selectedDate] && (
+              {/* Items breakdown for selected dates */}
+              {selectedDates.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    Items sold on {selectedDate}
+                    {selectedDates.length === 1
+                      ? `Items sold on Day ${getDayFromDate(selectedDates[0])} - ${getMonthYearDisplay()}`
+                      : `Items sold across ${selectedDates.length} selected dates - ${getMonthYearDisplay()}`}
                   </h3>
                   <div className="space-y-2">
-                    {Object.entries(reportData.itemsByDate[selectedDate])
+                    {Object.entries(aggregatedItems)
                       .sort((a, b) => b[1].revenue - a[1].revenue)
                       .map(([itemName, data]) => (
                         <div
@@ -232,9 +300,13 @@ function ReportsPageContent() {
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Total for {selectedDate}:</span>
+                      <span className="font-semibold text-gray-900">
+                        {selectedDates.length === 1
+                          ? `Total for Day ${getDayFromDate(selectedDates[0])}:`
+                          : `Total for selected dates:`}
+                      </span>
                       <span className="text-xl font-bold text-blue-600">
-                        ${Object.values(reportData.itemsByDate[selectedDate])
+                        ${Object.values(aggregatedItems)
                           .reduce((sum, item) => sum + item.revenue, 0)
                           .toFixed(2)}
                       </span>
