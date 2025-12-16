@@ -91,28 +91,30 @@ function ReportsPageContent() {
     { value: '12', label: 'December' },
   ];
 
-  // Helper function to toggle date selection
-  const toggleDateSelection = (date: string) => {
-    setSelectedDates(prev => {
-      if (prev.includes(date)) {
-        return prev.filter(d => d !== date);
-      } else {
-        return [...prev, date];
-      }
-    });
+  // Helper function to handle multi-select dropdown change
+  const handleDateSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(e.target.selectedOptions);
+    const values = options.map(option => option.value);
+    setSelectedDates(values);
   };
 
-  // Helper function to select all dates
-  const selectAllDates = () => {
-    if (reportData && reportData.itemsByDate) {
-      const allDates = Object.keys(reportData.itemsByDate);
-      setSelectedDates(allDates);
+  // Helper function to get day from date string
+  const getDayFromDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.getDate();
+  };
+
+  // Helper function to get month and year for display
+  const getMonthYearDisplay = () => {
+    if (!reportData || !reportData.itemsByDate || Object.keys(reportData.itemsByDate).length === 0) {
+      return '';
     }
-  };
-
-  // Helper function to clear all dates
-  const clearAllDates = () => {
-    setSelectedDates([]);
+    // Get first date to extract month and year
+    const firstDate = Object.keys(reportData.itemsByDate)[0];
+    const date = new Date(firstDate);
+    const monthName = monthOptions[date.getMonth()]?.label || '';
+    const year = date.getFullYear();
+    return `${monthName} ${year}`;
   };
 
   // Calculate aggregated items across selected dates (memoized for performance)
@@ -233,48 +235,26 @@ function ReportsPageContent() {
             <p className="text-gray-500 text-center py-4">No data available</p>
           ) : (
             <div>
-              {/* Date selector with checkboxes */}
+              {/* Date selector - multi-select dropdown */}
               <div className="mb-4">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select dates to view items sold
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={selectAllDates}
-                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={clearAllDates}
-                      className="px-3 py-1 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                  <div className="space-y-2">
-                    {Object.keys(reportData.itemsByDate)
-                      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-                      .map((date) => (
-                        <label
-                          key={date}
-                          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedDates.includes(date)}
-                            onChange={() => toggleDateSelection(date)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          />
-                          <span className="text-gray-900">{date}</span>
-                        </label>
-                      ))}
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select dates to view items sold
+                </label>
+                <select
+                  multiple
+                  value={selectedDates}
+                  onChange={handleDateSelectionChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[200px]"
+                  size={8}
+                >
+                  {Object.keys(reportData.itemsByDate)
+                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                    .map((date) => (
+                      <option key={date} value={date}>
+                        Day {getDayFromDate(date)}
+                      </option>
+                    ))}
+                </select>
                 
                 {selectedDates.length > 0 && (
                   <div className="mt-2 text-sm text-gray-600">
@@ -288,8 +268,8 @@ function ReportsPageContent() {
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800">
                     {selectedDates.length === 1 
-                      ? `Items sold on ${selectedDates[0]}`
-                      : `Items sold across ${selectedDates.length} selected dates`}
+                      ? `Items sold on Day ${getDayFromDate(selectedDates[0])} - ${getMonthYearDisplay()}`
+                      : `Items sold across ${selectedDates.length} selected dates - ${getMonthYearDisplay()}`}
                   </h3>
                   <div className="space-y-2">
                     {Object.entries(aggregatedItems)
@@ -315,7 +295,7 @@ function ReportsPageContent() {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-gray-900">
                         {selectedDates.length === 1 
-                          ? `Total for ${selectedDates[0]}:`
+                          ? `Total for Day ${getDayFromDate(selectedDates[0])}:`
                           : `Total for selected dates:`}
                       </span>
                       <span className="text-xl font-bold text-blue-600">
