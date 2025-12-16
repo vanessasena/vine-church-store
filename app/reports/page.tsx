@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 interface ReportData {
@@ -113,8 +113,8 @@ function ReportsPageContent() {
     setSelectedDates([]);
   };
 
-  // Calculate aggregated items across selected dates
-  const getAggregatedItems = () => {
+  // Calculate aggregated items across selected dates (memoized for performance)
+  const aggregatedItems = useMemo(() => {
     if (!reportData || !reportData.itemsByDate) return {};
     
     const aggregated: Record<string, { quantity: number; revenue: number }> = {};
@@ -133,7 +133,7 @@ function ReportsPageContent() {
     });
     
     return aggregated;
-  };
+  }, [selectedDates, reportData]);
 
   if (loading) {
     return (
@@ -280,52 +280,49 @@ function ReportsPageContent() {
               </div>
 
               {/* Items breakdown for selected dates */}
-              {selectedDates.length > 0 && (() => {
-                const aggregatedItems = getAggregatedItems();
-                return (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                      {selectedDates.length === 1 
-                        ? `Items sold on ${selectedDates[0]}`
-                        : `Items sold across ${selectedDates.length} selected dates`}
-                    </h3>
-                    <div className="space-y-2">
-                      {Object.entries(aggregatedItems)
-                        .sort((a, b) => b[1].revenue - a[1].revenue)
-                        .map(([itemName, data]) => (
-                          <div
-                            key={itemName}
-                            className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                          >
-                            <div>
-                              <div className="font-medium text-gray-900">{itemName}</div>
-                              <div className="text-sm text-gray-600">
-                                Quantity sold: {data.quantity}
-                              </div>
-                            </div>
-                            <div className="text-lg font-bold text-green-600">
-                              ${data.revenue.toFixed(2)}
+              {selectedDates.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
+                    {selectedDates.length === 1 
+                      ? `Items sold on ${selectedDates[0]}`
+                      : `Items sold across ${selectedDates.length} selected dates`}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(aggregatedItems)
+                      .sort((a, b) => b[1].revenue - a[1].revenue)
+                      .map(([itemName, data]) => (
+                        <div
+                          key={itemName}
+                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <div>
+                            <div className="font-medium text-gray-900">{itemName}</div>
+                            <div className="text-sm text-gray-600">
+                              Quantity sold: {data.quantity}
                             </div>
                           </div>
-                        ))}
-                    </div>
-                    <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900">
-                          {selectedDates.length === 1 
-                            ? `Total for ${selectedDates[0]}:`
-                            : `Total for selected dates:`}
-                        </span>
-                        <span className="text-xl font-bold text-blue-600">
-                          ${Object.values(aggregatedItems)
-                            .reduce((sum, item) => sum + item.revenue, 0)
-                            .toFixed(2)}
-                        </span>
-                      </div>
+                          <div className="text-lg font-bold text-green-600">
+                            ${data.revenue.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">
+                        {selectedDates.length === 1 
+                          ? `Total for ${selectedDates[0]}:`
+                          : `Total for selected dates:`}
+                      </span>
+                      <span className="text-xl font-bold text-blue-600">
+                        ${Object.values(aggregatedItems)
+                          .reduce((sum, item) => sum + item.revenue, 0)
+                          .toFixed(2)}
+                      </span>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
           )}
         </div>
