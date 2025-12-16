@@ -33,18 +33,18 @@ function ReportsPageContent() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>((currentDate.getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState<string>(currentDate.getFullYear().toString());
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
 
   useEffect(() => {
     fetchReportData();
   }, [selectedMonth, selectedYear]);
 
-  // Set the most recent date when reportData is loaded
+  // Set the most recent date when reportData is loaded (default selection)
   useEffect(() => {
     if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0) {
       const dates = Object.keys(reportData.itemsByDate);
       const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-      setSelectedDate(mostRecentDate);
+      setSelectedDates([mostRecentDate]);
     }
   }, [reportData]);
 
@@ -88,6 +88,52 @@ function ReportsPageContent() {
     { value: '11', label: 'November' },
     { value: '12', label: 'December' },
   ];
+
+  // Helper function to toggle date selection
+  const toggleDateSelection = (date: string) => {
+    setSelectedDates(prev => {
+      if (prev.includes(date)) {
+        return prev.filter(d => d !== date);
+      } else {
+        return [...prev, date];
+      }
+    });
+  };
+
+  // Helper function to select all dates
+  const selectAllDates = () => {
+    if (reportData && reportData.itemsByDate) {
+      const allDates = Object.keys(reportData.itemsByDate);
+      setSelectedDates(allDates);
+    }
+  };
+
+  // Helper function to clear all dates
+  const clearAllDates = () => {
+    setSelectedDates([]);
+  };
+
+  // Calculate aggregated items across selected dates
+  const getAggregatedItems = () => {
+    if (!reportData || !reportData.itemsByDate) return {};
+    
+    const aggregated: Record<string, { quantity: number; revenue: number }> = {};
+    
+    selectedDates.forEach(date => {
+      const dateItems = reportData.itemsByDate[date];
+      if (dateItems) {
+        Object.entries(dateItems).forEach(([itemName, data]) => {
+          if (!aggregated[itemName]) {
+            aggregated[itemName] = { quantity: 0, revenue: 0 };
+          }
+          aggregated[itemName].quantity += data.quantity;
+          aggregated[itemName].revenue += data.revenue;
+        });
+      }
+    });
+    
+    return aggregated;
+  };
 
   if (loading) {
     return (
@@ -183,65 +229,103 @@ function ReportsPageContent() {
             <p className="text-gray-500 text-center py-4">No data available</p>
           ) : (
             <div>
-              {/* Date selector */}
+              {/* Date selector with checkboxes */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select a date to view items sold
-                </label>
-                <select
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select a date</option>
-                  {Object.keys(reportData.itemsByDate)
-                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-                    .map((date) => (
-                      <option key={date} value={date}>
-                        {date}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Items breakdown for selected date */}
-              {selectedDate && reportData.itemsByDate[selectedDate] && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    Items sold on {selectedDate}
-                  </h3>
-                  <div className="space-y-2">
-                    {Object.entries(reportData.itemsByDate[selectedDate])
-                      .sort((a, b) => b[1].revenue - a[1].revenue)
-                      .map(([itemName, data]) => (
-                        <div
-                          key={itemName}
-                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                        >
-                          <div>
-                            <div className="font-medium text-gray-900">{itemName}</div>
-                            <div className="text-sm text-gray-600">
-                              Quantity sold: {data.quantity}
-                            </div>
-                          </div>
-                          <div className="text-lg font-bold text-green-600">
-                            ${data.revenue.toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Total for {selectedDate}:</span>
-                      <span className="text-xl font-bold text-blue-600">
-                        ${Object.values(reportData.itemsByDate[selectedDate])
-                          .reduce((sum, item) => sum + item.revenue, 0)
-                          .toFixed(2)}
-                      </span>
-                    </div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select dates to view items sold
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectAllDates}
+                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={clearAllDates}
+                      className="px-3 py-1 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                    >
+                      Clear All
+                    </button>
                   </div>
                 </div>
-              )}
+                
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                  <div className="space-y-2">
+                    {Object.keys(reportData.itemsByDate)
+                      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                      .map((date) => (
+                        <label
+                          key={date}
+                          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedDates.includes(date)}
+                            onChange={() => toggleDateSelection(date)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-gray-900">{date}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+                
+                {selectedDates.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
+              </div>
+
+              {/* Items breakdown for selected dates */}
+              {selectedDates.length > 0 && (() => {
+                const aggregatedItems = getAggregatedItems();
+                return (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold mb-3 text-gray-800">
+                      {selectedDates.length === 1 
+                        ? `Items sold on ${selectedDates[0]}`
+                        : `Items sold across ${selectedDates.length} selected dates`}
+                    </h3>
+                    <div className="space-y-2">
+                      {Object.entries(aggregatedItems)
+                        .sort((a, b) => b[1].revenue - a[1].revenue)
+                        .map(([itemName, data]) => (
+                          <div
+                            key={itemName}
+                            className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                          >
+                            <div>
+                              <div className="font-medium text-gray-900">{itemName}</div>
+                              <div className="text-sm text-gray-600">
+                                Quantity sold: {data.quantity}
+                              </div>
+                            </div>
+                            <div className="text-lg font-bold text-green-600">
+                              ${data.revenue.toFixed(2)}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900">
+                          {selectedDates.length === 1 
+                            ? `Total for ${selectedDates[0]}:`
+                            : `Total for selected dates:`}
+                        </span>
+                        <span className="text-xl font-bold text-blue-600">
+                          ${Object.values(aggregatedItems)
+                            .reduce((sum, item) => sum + item.revenue, 0)
+                            .toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
