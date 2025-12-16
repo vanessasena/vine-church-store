@@ -37,16 +37,18 @@ function ReportsPageContent() {
 
   useEffect(() => {
     fetchReportData();
+    // Clear selected dates when filters change so we can set new defaults
+    setSelectedDates([]);
   }, [selectedMonth, selectedYear]);
 
   // Set the most recent date when reportData is loaded (default selection)
   useEffect(() => {
-    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0) {
+    if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0 && selectedDates.length === 0) {
       const dates = Object.keys(reportData.itemsByDate);
       const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
       setSelectedDates([mostRecentDate]);
     }
-  }, [reportData]);
+  }, [reportData, selectedDates.length]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -119,17 +121,18 @@ function ReportsPageContent() {
     
     const aggregated: Record<string, { quantity: number; revenue: number }> = {};
     
-    selectedDates.forEach(date => {
+    // Filter to only include dates that exist in current reportData
+    const validDates = selectedDates.filter(date => date in reportData.itemsByDate);
+    
+    validDates.forEach(date => {
       const dateItems = reportData.itemsByDate[date];
-      if (dateItems) {
-        Object.entries(dateItems).forEach(([itemName, data]) => {
-          if (!aggregated[itemName]) {
-            aggregated[itemName] = { quantity: 0, revenue: 0 };
-          }
-          aggregated[itemName].quantity += data.quantity;
-          aggregated[itemName].revenue += data.revenue;
-        });
-      }
+      Object.entries(dateItems).forEach(([itemName, data]) => {
+        if (!aggregated[itemName]) {
+          aggregated[itemName] = { quantity: 0, revenue: 0 };
+        }
+        aggregated[itemName].quantity += data.quantity;
+        aggregated[itemName].revenue += data.revenue;
+      });
     });
     
     return aggregated;
