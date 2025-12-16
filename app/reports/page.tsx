@@ -122,7 +122,8 @@ function ReportsPageContent() {
     const aggregated: Record<string, { quantity: number; revenue: number }> = {};
     
     // Filter to only include dates that exist in current reportData
-    const validDates = selectedDates.filter(date => date in reportData.itemsByDate);
+    const validDateSet = new Set(Object.keys(reportData.itemsByDate));
+    const validDates = selectedDates.filter(date => validDateSet.has(date));
     
     validDates.forEach(date => {
       const dateItems = reportData.itemsByDate[date];
