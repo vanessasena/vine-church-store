@@ -127,13 +127,13 @@ function ReportsPageContent() {
   // Calculate aggregated items across selected dates (memoized for performance)
   const aggregatedItems = useMemo(() => {
     if (!reportData || !reportData.itemsByDate) return {};
-    
+
     const aggregated: Record<string, { quantity: number; revenue: number }> = {};
-    
+
     // Filter to only include dates that exist in current reportData
     const validDateSet = new Set(Object.keys(reportData.itemsByDate));
     const validDates = selectedDates.filter(date => validDateSet.has(date));
-    
+
     validDates.forEach(date => {
       const dateItems = reportData.itemsByDate[date];
       Object.entries(dateItems).forEach(([itemName, data]) => {
@@ -144,7 +144,7 @@ function ReportsPageContent() {
         aggregated[itemName].revenue += data.revenue;
       });
     });
-    
+
     return aggregated;
   }, [selectedDates, reportData]);
 
@@ -251,8 +251,8 @@ function ReportsPageContent() {
                   multiple
                   value={selectedDates}
                   onChange={handleDateSelectionChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[200px]"
-                  size={8}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  size={1}
                 >
                   {Object.keys(reportData.itemsByDate)
                     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
@@ -262,7 +262,7 @@ function ReportsPageContent() {
                       </option>
                     ))}
                 </select>
-                
+
                 {selectedDates.length > 0 && (
                   <div className="mt-2 text-sm text-gray-600">
                     {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected
@@ -274,7 +274,7 @@ function ReportsPageContent() {
               {selectedDates.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                    {selectedDates.length === 1 
+                    {selectedDates.length === 1
                       ? `Items sold on Day ${getDayFromDate(selectedDates[0])} - ${getMonthYearDisplay()}`
                       : `Items sold across ${selectedDates.length} selected dates - ${getMonthYearDisplay()}`}
                   </h3>
@@ -301,7 +301,7 @@ function ReportsPageContent() {
                   <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-gray-900">
-                        {selectedDates.length === 1 
+                        {selectedDates.length === 1
                           ? `Total for Day ${getDayFromDate(selectedDates[0])}:`
                           : `Total for selected dates:`}
                       </span>
