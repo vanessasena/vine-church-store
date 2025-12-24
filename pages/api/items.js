@@ -66,7 +66,12 @@ export default async function handler(req, res) {
         }
 
         // Check if this is a simple is_active toggle (only id and is_active provided)
-        const isActiveToggleOnly = is_active !== undefined && !name && !category_id;
+        const isActiveToggleOnly = is_active !== undefined && 
+          name === undefined && 
+          category_id === undefined && 
+          price === undefined && 
+          has_custom_price === undefined && 
+          image_url === undefined;
 
         // Validate that if has_custom_price is false, price must be provided
         // Skip validation if this is just an is_active toggle
@@ -83,11 +88,13 @@ export default async function handler(req, res) {
         
         // Only include other fields if this is not just an is_active toggle
         if (!isActiveToggleOnly) {
-          updateData.name = name;
-          updateData.category_id = category_id;
-          updateData.price = has_custom_price ? null : price;
-          updateData.has_custom_price = has_custom_price || false;
-          updateData.image_url = image_url || null;
+          if (name !== undefined) updateData.name = name;
+          if (category_id !== undefined) updateData.category_id = category_id;
+          if (price !== undefined || has_custom_price !== undefined) {
+            updateData.price = has_custom_price ? null : price;
+            updateData.has_custom_price = has_custom_price || false;
+          }
+          if (image_url !== undefined) updateData.image_url = image_url || null;
         }
 
         const { data, error } = await supabaseAdmin
