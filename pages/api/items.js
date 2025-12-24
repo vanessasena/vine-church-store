@@ -65,22 +65,29 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Item ID is required' });
         }
 
+        // Check if this is a simple is_active toggle (only id and is_active provided)
+        const isActiveToggleOnly = is_active !== undefined && !name && !category_id;
+
         // Validate that if has_custom_price is false, price must be provided
-        if (!has_custom_price && (price === undefined || price === null)) {
+        // Skip validation if this is just an is_active toggle
+        if (!isActiveToggleOnly && !has_custom_price && (price === undefined || price === null)) {
           return res.status(400).json({ error: 'Price is required for non-custom-price items' });
         }
 
-        const updateData = { 
-          name, 
-          category_id, 
-          price: has_custom_price ? null : price, 
-          has_custom_price: has_custom_price || false, 
-          image_url: image_url || null 
-        };
-
-        // Only include is_active if it's provided in the request
+        // Build update data based on what's provided
+        const updateData = {};
+        
         if (is_active !== undefined) {
           updateData.is_active = is_active;
+        }
+        
+        // Only include other fields if this is not just an is_active toggle
+        if (!isActiveToggleOnly) {
+          updateData.name = name;
+          updateData.category_id = category_id;
+          updateData.price = has_custom_price ? null : price;
+          updateData.has_custom_price = has_custom_price || false;
+          updateData.image_url = image_url || null;
         }
 
         const { data, error } = await supabaseAdmin
