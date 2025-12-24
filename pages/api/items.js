@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category_id, price, has_custom_price, image_url } = req.body;
+        const { name, category_id, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!name || !category_id) {
           return res.status(400).json({ error: 'Missing required fields' });
@@ -37,7 +37,14 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabaseAdmin
           .from('items')
-          .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null }])
+          .insert([{ 
+            name, 
+            category_id, 
+            price: has_custom_price ? null : price, 
+            has_custom_price: has_custom_price || false, 
+            image_url: image_url || null,
+            is_active: is_active !== undefined ? is_active : true
+          }])
           .select(`
             *,
             category:categories(*)
@@ -52,7 +59,7 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category_id, price, has_custom_price, image_url } = req.body;
+        const { id, name, category_id, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
@@ -63,9 +70,22 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Price is required for non-custom-price items' });
         }
 
+        const updateData = { 
+          name, 
+          category_id, 
+          price: has_custom_price ? null : price, 
+          has_custom_price: has_custom_price || false, 
+          image_url: image_url || null 
+        };
+
+        // Only include is_active if it's provided in the request
+        if (is_active !== undefined) {
+          updateData.is_active = is_active;
+        }
+
         const { data, error } = await supabaseAdmin
           .from('items')
-          .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null })
+          .update(updateData)
           .eq('id', id)
           .select(`
             *,

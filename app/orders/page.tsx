@@ -160,10 +160,14 @@ function OrdersPageContent() {
   };
 
   const getFilteredItems = () => {
-    if (!selectedCategory) {
-      return items;
+    // Filter to show only active items
+    let filtered = items.filter(item => item.is_active);
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(item => item.category?.name === selectedCategory);
     }
-    return items.filter(item => item.category?.name === selectedCategory);
+    
+    return filtered;
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {

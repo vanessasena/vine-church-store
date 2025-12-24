@@ -234,6 +234,20 @@ function ItemsPageContent({
     }
   };
 
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch('/api/items', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !currentStatus }),
+      });
+      if (!response.ok) alert('Failed to update item status. Please try again.');
+      fetchItems();
+    } catch (error) {
+      console.error('Error toggling item status:', error);
+    }
+  };
+
   const cancelEdit = () => {
     setEditingId(null);
     setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
@@ -433,6 +447,7 @@ function ItemsPageContent({
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                       </tr>
                     </thead>
@@ -466,7 +481,28 @@ function ItemsPageContent({
                             )}
                           </td>
                           <td className="py-3 px-4">
+                            <span
+                              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                item.is_active
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {item.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
                             <div className="flex gap-2">
+                              <button
+                                onClick={() => toggleActive(item.id, item.is_active)}
+                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                  item.is_active
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }`}
+                              >
+                                {item.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
                               <button
                                 onClick={() => handleEdit(item)}
                                 className="text-blue-600 hover:text-blue-800 font-medium"
