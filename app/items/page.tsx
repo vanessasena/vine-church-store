@@ -11,6 +11,7 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -27,6 +28,8 @@ export default function ItemsPage() {
         setFormData={setFormData}
         editingId={editingId}
         setEditingId={setEditingId}
+        editingItem={editingItem}
+        setEditingItem={setEditingItem}
         categories={categories}
         setCategories={setCategories}
         selectedCategoryFilter={selectedCategoryFilter}
@@ -42,7 +45,7 @@ export default function ItemsPage() {
 
 function ItemsPageContent({
   items, setItems, loading, setLoading, formData, setFormData,
-  editingId, setEditingId, categories, setCategories,
+  editingId, setEditingId, editingItem, setEditingItem, categories, setCategories,
   selectedCategoryFilter, setSelectedCategoryFilter,
   imageFile, setImageFile, imagePreview, setImagePreview
 }: {
@@ -54,6 +57,8 @@ function ItemsPageContent({
   setFormData: (formData: any) => void;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  editingItem: Item | null;
+  setEditingItem: (item: Item | null) => void;
   categories: { id: string; name: string }[];
   setCategories: (categories: { id: string; name: string }[]) => void;
   selectedCategoryFilter: string;
@@ -174,6 +179,8 @@ function ItemsPageContent({
       price: formData.hasCustomPrice ? null : parseFloat(formData.price),
       has_custom_price: formData.hasCustomPrice,
       image_url: imageUrl,
+      // Preserve is_active status when editing, default to true for new items
+      is_active: editingItem?.is_active ?? true,
     };
 
     try {
@@ -186,6 +193,7 @@ function ItemsPageContent({
 
         if (response.ok) {
           setEditingId(null);
+          setEditingItem(null);
         }
       } else {
         await fetch('/api/items', {
@@ -216,6 +224,7 @@ function ItemsPageContent({
     setImagePreview(item.image_url || '');
     setImageFile(null);
     setEditingId(item.id);
+    setEditingItem(item);
     refItemName.current?.focus();
   };
 
@@ -250,6 +259,7 @@ function ItemsPageContent({
 
   const cancelEdit = () => {
     setEditingId(null);
+    setEditingItem(null);
     setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
     setImageFile(null);
     setImagePreview('');
