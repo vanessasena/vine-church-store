@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category_id, price, has_custom_price, image_url } = req.body;
+        const { name, category_id, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!name || !category_id) {
           return res.status(400).json({ error: 'Missing required fields' });
@@ -37,7 +37,14 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabaseAdmin
           .from('items')
-          .insert([{ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null }])
+          .insert([{ 
+            name, 
+            category_id, 
+            price: has_custom_price ? null : price, 
+            has_custom_price: has_custom_price || false, 
+            image_url: image_url || null,
+            is_active: is_active !== undefined ? is_active : true
+          }])
           .select(`
             *,
             category:categories(*)
@@ -52,20 +59,47 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category_id, price, has_custom_price, image_url } = req.body;
+        const { id, name, category_id, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
         }
 
+        // Check if this is a simple is_active toggle (only id and is_active provided)
+        const isActiveToggleOnly = is_active !== undefined && 
+          name === undefined && 
+          category_id === undefined && 
+          price === undefined && 
+          has_custom_price === undefined && 
+          image_url === undefined;
+
         // Validate that if has_custom_price is false, price must be provided
-        if (!has_custom_price && (price === undefined || price === null)) {
+        // Skip validation if this is just an is_active toggle
+        if (!isActiveToggleOnly && !has_custom_price && (price === undefined || price === null)) {
           return res.status(400).json({ error: 'Price is required for non-custom-price items' });
+        }
+
+        // Build update data based on what's provided
+        const updateData = {};
+        
+        if (is_active !== undefined) {
+          updateData.is_active = is_active;
+        }
+        
+        // Only include other fields if this is not just an is_active toggle
+        if (!isActiveToggleOnly) {
+          if (name !== undefined) updateData.name = name;
+          if (category_id !== undefined) updateData.category_id = category_id;
+          if (price !== undefined || has_custom_price !== undefined) {
+            updateData.price = has_custom_price ? null : price;
+            updateData.has_custom_price = has_custom_price || false;
+          }
+          if (image_url !== undefined) updateData.image_url = image_url || null;
         }
 
         const { data, error } = await supabaseAdmin
           .from('items')
-          .update({ name, category_id, price: has_custom_price ? null : price, has_custom_price: has_custom_price || false, image_url: image_url || null })
+          .update(updateData)
           .eq('id', id)
           .select(`
             *,
