@@ -50,6 +50,11 @@ function OrdersPageContent() {
   const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('customer_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [customerNameFilter, setCustomerNameFilter] = useState('');
+
+  // Helper function to format dates consistently
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' });
+  };
   const [customerNameInput, setCustomerNameInput] = useState('');
 
   // Debounce customer name filter - only apply after 2 seconds of typing
@@ -841,11 +846,11 @@ function OrdersPageContent() {
                       <div>
                         <h3 className="text-lg font-semibold">{order.customer_name}</h3>
                         <p className="text-sm text-gray-600">
-                          Created: {new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
+                          Created: {formatDate(order.created_at)}
                         </p>
                         {order.is_paid && order.payment_date && (
                           <p className="text-sm text-green-600">
-                            Paid: {new Date(order.payment_date).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
+                            Paid: {formatDate(order.payment_date)}
                           </p>
                         )}
                       </div>
