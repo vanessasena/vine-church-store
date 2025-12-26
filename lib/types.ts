@@ -32,6 +32,7 @@ export interface Order {
   total_cost: number;
   is_paid: boolean;
   payment_type?: string | null;
+  payment_date?: string | null;
   created_at: string;
   order_items?: OrderItem[];
 }
