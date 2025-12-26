@@ -34,6 +34,8 @@ function OrdersPageContent() {
   const [showEditOrder, setShowEditOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editCart, setEditCart] = useState<CartItem[]>([]);
+  const [editCreatedAt, setEditCreatedAt] = useState('');
+  const [editPaymentDate, setEditPaymentDate] = useState('');
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
   const [clickedItemId, setClickedItemId] = useState<string | null>(null);
   const [clickedEditItemId, setClickedEditItemId] = useState<string | null>(null);
@@ -289,6 +291,19 @@ function OrdersPageContent() {
 
   const startEditOrder = (order: Order) => {
     setEditingOrder(order);
+    
+    // Set dates for editing - convert to YYYY-MM-DD format for date inputs
+    const createdDate = new Date(order.created_at);
+    setEditCreatedAt(createdDate.toISOString().split('T')[0]);
+    
+    // Set payment date if it exists
+    if (order.payment_date) {
+      const paymentDate = new Date(order.payment_date);
+      setEditPaymentDate(paymentDate.toISOString().split('T')[0]);
+    } else {
+      setEditPaymentDate('');
+    }
+    
     // Convert order items to cart format
     const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
       const currentItem = orderItem.item;
@@ -370,6 +385,8 @@ function OrdersPageContent() {
     try {
       const orderData = {
         id: editingOrder.id,
+        created_at: editCreatedAt ? new Date(editCreatedAt).toISOString() : undefined,
+        payment_date: editPaymentDate ? new Date(editPaymentDate).toISOString() : null,
         items: editCart.map(item => ({
           id: item.id,
           quantity: item.quantity,
@@ -389,6 +406,8 @@ function OrdersPageContent() {
       if (response.ok) {
         setEditCart([]);
         setEditingOrder(null);
+        setEditCreatedAt('');
+        setEditPaymentDate('');
         setShowEditOrder(false);
         // Sort by date descending to show updated order at top
         setSortBy('date');
@@ -822,8 +841,13 @@ function OrdersPageContent() {
                       <div>
                         <h3 className="text-lg font-semibold">{order.customer_name}</h3>
                         <p className="text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit' })}
+                          Created: {new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
                         </p>
+                        {order.is_paid && order.payment_date && (
+                          <p className="text-sm text-green-600">
+                            Paid: {new Date(order.payment_date).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-xl font-bold text-green-600">
@@ -1044,6 +1068,39 @@ function OrdersPageContent() {
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 my-8">
               <h2 className="text-2xl font-semibold mb-4">Edit Order - {editingOrder.customer_name}</h2>
               <form onSubmit={handleUpdateOrder}>
+                {/* Date Fields */}
+                <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                  <h3 className="text-sm font-semibold mb-3 text-gray-700">Order Dates</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Order Created Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editCreatedAt}
+                        onChange={(e) => setEditCreatedAt(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={editPaymentDate}
+                        onChange={(e) => setEditPaymentDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty if not yet paid or to clear payment date
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-semibold">Available Items</h3>
@@ -1201,6 +1258,8 @@ function OrdersPageContent() {
                     onClick={() => {
                       setEditCart([]);
                       setEditingOrder(null);
+                      setEditCreatedAt('');
+                      setEditPaymentDate('');
                       setShowEditOrder(false);
                       setSelectedCategory('');
                     }}
