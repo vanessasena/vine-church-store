@@ -27,6 +27,7 @@ CREATE TABLE orders (
   total_cost DECIMAL(10, 2) NOT NULL,
   is_paid BOOLEAN DEFAULT FALSE,
   payment_type TEXT,
+  payment_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -45,6 +46,7 @@ CREATE TABLE order_items (
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_item_id ON order_items(item_id);
 CREATE INDEX idx_orders_created_at ON orders(created_at);
+CREATE INDEX idx_orders_payment_date ON orders(payment_date);
 CREATE INDEX idx_items_category_id ON items(category_id);
 CREATE INDEX idx_categories_name ON categories(name);
 
