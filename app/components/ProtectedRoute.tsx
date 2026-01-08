@@ -4,17 +4,35 @@ import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requirePermission?: boolean;
+}
+
+export default function ProtectedRoute({
+  children,
+  requirePermission = true
+}: ProtectedRouteProps) {
+  const { user, loading, hasOrdersPermission, permissionLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
+    if (loading || permissionLoading) return;
 
-  if (loading) {
+    // Redirect to login if not authenticated
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    // Redirect to no-permission page if orders_permission is required but not granted
+    if (requirePermission && !hasOrdersPermission) {
+      router.push('/no-permission');
+      return;
+    }
+  }, [user, loading, permissionLoading, hasOrdersPermission, requirePermission, router]);
+
+  if (loading || permissionLoading) {
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 to-purple-50 flex items-center justify-center fixed-colors">
         <div className="text-center">
@@ -25,7 +43,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     );
   }
 
-  if (!user) {
+  if (!user || (requirePermission && !hasOrdersPermission)) {
     return null;
   }
 

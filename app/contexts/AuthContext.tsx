@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   hasOrdersPermission: boolean;
+  permissionLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any; hasPermission?: boolean }>;
   signOut: () => Promise<{ error: any }>;
 }
@@ -20,52 +21,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasOrdersPermission, setHasOrdersPermission] = useState(false);
+  const [permissionLoading, setPermissionLoading] = useState(false);
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Initialize session and permission in sequence
+    let isMounted = true;
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user?.email) {
-        checkOrdersPermission(session.user.email);
+      if (session?.access_token && session?.user?.email) {
+        setPermissionLoading(true);
+        await checkOrdersPermissionAPI(session.access_token);
+        setPermissionLoading(false);
+      } else {
+        setHasOrdersPermission(false);
       }
       setLoading(false);
-    });
+    };
+    init();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for auth changes and re-check permission
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user?.email) {
-        checkOrdersPermission(session.user.email);
+      if (session?.access_token && session?.user?.email) {
+        setPermissionLoading(true);
+        await checkOrdersPermissionAPI(session.access_token);
+        setPermissionLoading(false);
       } else {
         setHasOrdersPermission(false);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const checkOrdersPermission = async (email: string) => {
+  // Prefer server-side verification to bypass RLS issues
+  const checkOrdersPermissionAPI = async (accessToken: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('orders_permission')
-        .eq('email', email)
-        .single();
-
-      if (error) {
-        console.error('Error checking orders permission:', error);
+      const res = await fetch('/api/verify-permission', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) {
         setHasOrdersPermission(false);
         return;
       }
-
-      setHasOrdersPermission(data?.orders_permission ?? false);
+      const json = await res.json();
+      setHasOrdersPermission(Boolean(json?.hasPermission));
     } catch (error) {
-      console.error('Error checking orders permission:', error);
+      console.error('Error checking orders permission (API):', error);
       setHasOrdersPermission(false);
     }
   };
@@ -80,30 +92,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    // Check if user has orders_permission
+    // Verify permission via API using current access token
     try {
-      const { data, error: permError } = await supabase
-        .from('users')
-        .select('orders_permission')
-        .eq('email', email)
-        .single();
-
-      if (permError || !data?.orders_permission) {
-        // Sign out the user if they don't have permission
+      const { data: { session: current } } = await supabase.auth.getSession();
+      const token = current?.access_token;
+      if (!token) {
         await supabase.auth.signOut();
         return {
-          error: new Error('You do not have permission to access this system. Please contact an administrator.'),
-          hasPermission: false
+          error: new Error('Unable to verify permissions. Please try again.'),
+          hasPermission: false,
         };
       }
 
+      const res = await fetch('/api/verify-permission', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        await supabase.auth.signOut();
+        return {
+          error: new Error('You do not have permission to access this system. Please contact an administrator.'),
+          hasPermission: false,
+        };
+      }
+      const json = await res.json();
+      const permitted = Boolean(json?.hasPermission);
+      if (!permitted) {
+        await supabase.auth.signOut();
+        return {
+          error: new Error('You do not have permission to access this system. Please contact an administrator.'),
+          hasPermission: false,
+        };
+      }
+      setHasOrdersPermission(true);
       return { error: null, hasPermission: true };
     } catch (error) {
-      console.error('Error checking orders permission:', error);
+      console.error('Error verifying orders permission via API:', error);
       await supabase.auth.signOut();
       return {
         error: new Error('Unable to verify permissions. Please try again.'),
-        hasPermission: false
+        hasPermission: false,
       };
     }
   };
@@ -123,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     loading,
     hasOrdersPermission,
+    permissionLoading,
     signIn,
     signOut,
   };
