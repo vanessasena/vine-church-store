@@ -16,6 +16,7 @@ CREATE TABLE items (
   price DECIMAL(10, 2),
   has_custom_price BOOLEAN DEFAULT FALSE,
   image_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

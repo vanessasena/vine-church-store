@@ -160,10 +160,14 @@ function OrdersPageContent() {
   };
 
   const getFilteredItems = () => {
-    if (!selectedCategory) {
-      return items;
+    // Filter to show only active items
+    let filtered = items.filter(item => item.is_active);
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(item => item.category?.name === selectedCategory);
     }
-    return items.filter(item => item.category?.name === selectedCategory);
+    
+    return filtered;
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -296,6 +300,7 @@ function OrdersPageContent() {
         category_id: currentItem?.category_id || '',
         price: isCurrentlyCustomPrice ? orderItem.price_at_time : (currentItem?.price ?? null),
         has_custom_price: isCurrentlyCustomPrice,
+        is_active: currentItem?.is_active ?? true,
         quantity: orderItem.quantity,
         // If item is currently custom-price, preserve the historical price from order
         customPrice: isCurrentlyCustomPrice ? orderItem.price_at_time : undefined,

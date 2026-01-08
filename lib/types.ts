@@ -11,6 +11,7 @@ export interface Item {
   price: number | null;
   has_custom_price: boolean;
   image_url?: string | null;
+  is_active: boolean;
   created_at?: string;
   category?: Category;
 }

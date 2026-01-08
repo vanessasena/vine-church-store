@@ -11,6 +11,7 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -27,6 +28,8 @@ export default function ItemsPage() {
         setFormData={setFormData}
         editingId={editingId}
         setEditingId={setEditingId}
+        editingItem={editingItem}
+        setEditingItem={setEditingItem}
         categories={categories}
         setCategories={setCategories}
         selectedCategoryFilter={selectedCategoryFilter}
@@ -42,7 +45,7 @@ export default function ItemsPage() {
 
 function ItemsPageContent({
   items, setItems, loading, setLoading, formData, setFormData,
-  editingId, setEditingId, categories, setCategories,
+  editingId, setEditingId, editingItem, setEditingItem, categories, setCategories,
   selectedCategoryFilter, setSelectedCategoryFilter,
   imageFile, setImageFile, imagePreview, setImagePreview
 }: {
@@ -54,6 +57,8 @@ function ItemsPageContent({
   setFormData: (formData: any) => void;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  editingItem: Item | null;
+  setEditingItem: (item: Item | null) => void;
   categories: { id: string; name: string }[];
   setCategories: (categories: { id: string; name: string }[]) => void;
   selectedCategoryFilter: string;
@@ -174,6 +179,8 @@ function ItemsPageContent({
       price: formData.hasCustomPrice ? null : parseFloat(formData.price),
       has_custom_price: formData.hasCustomPrice,
       image_url: imageUrl,
+      // Preserve is_active status when editing, default to true for new items
+      is_active: editingItem?.is_active ?? true,
     };
 
     try {
@@ -186,6 +193,7 @@ function ItemsPageContent({
 
         if (response.ok) {
           setEditingId(null);
+          setEditingItem(null);
         }
       } else {
         await fetch('/api/items', {
@@ -216,6 +224,7 @@ function ItemsPageContent({
     setImagePreview(item.image_url || '');
     setImageFile(null);
     setEditingId(item.id);
+    setEditingItem(item);
     refItemName.current?.focus();
   };
 
@@ -234,8 +243,23 @@ function ItemsPageContent({
     }
   };
 
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch('/api/items', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !currentStatus }),
+      });
+      if (!response.ok) alert('Failed to update item status. Please try again.');
+      fetchItems();
+    } catch (error) {
+      console.error('Error toggling item status:', error);
+    }
+  };
+
   const cancelEdit = () => {
     setEditingId(null);
+    setEditingItem(null);
     setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
     setImageFile(null);
     setImagePreview('');
@@ -433,6 +457,7 @@ function ItemsPageContent({
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                       </tr>
                     </thead>
@@ -466,7 +491,28 @@ function ItemsPageContent({
                             )}
                           </td>
                           <td className="py-3 px-4">
+                            <span
+                              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                item.is_active
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {item.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
                             <div className="flex gap-2">
+                              <button
+                                onClick={() => toggleActive(item.id, item.is_active)}
+                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                  item.is_active
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }`}
+                              >
+                                {item.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
                               <button
                                 onClick={() => handleEdit(item)}
                                 className="text-blue-600 hover:text-blue-800 font-medium"
