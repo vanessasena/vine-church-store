@@ -18,10 +18,13 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
-    const { error } = await signIn(email, password);
+    const { error, hasPermission } = await signIn(email, password);
 
     if (error) {
       setError(error.message || 'Failed to sign in. Please check your credentials.');
+      setLoading(false);
+    } else if (hasPermission === false) {
+      setError('You do not have permission to access this system. Please contact an administrator.');
       setLoading(false);
     } else {
       router.push('/');
