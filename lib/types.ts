@@ -47,3 +47,12 @@ export interface AccessRequest {
   reviewed_at?: string;
   reviewed_by?: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  role: 'member' | 'admin';
+  orders_permission: boolean;
+  created_at: string;
+  updated_at: string;
+}
