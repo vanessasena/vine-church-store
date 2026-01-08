@@ -143,9 +143,12 @@ export default async function handler(req, res) {
         const updateData = { is_paid };
         if (is_paid) {
           updateData.payment_type = payment_type;
+          // Set payment_date to current timestamp when marking as paid
+          updateData.payment_date = new Date().toISOString();
         } else {
-          // Clear payment_type when marking as unpaid
+          // Clear payment_type and payment_date when marking as unpaid
           updateData.payment_type = null;
+          updateData.payment_date = null;
         }
 
         const { data, error } = await supabaseAdmin
@@ -163,7 +166,7 @@ export default async function handler(req, res) {
 
     case 'PATCH':
       try {
-        const { id, items } = req.body;
+        const { id, items, created_at, payment_date } = req.body;
 
         if (!id || !items || !Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ error: 'Order ID and items are required' });
@@ -185,10 +188,21 @@ export default async function handler(req, res) {
         // Calculate new total cost
         const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // Update order total
+        // Build update object
+        const updateData = { total_cost };
+        
+        // Add optional date fields if provided
+        if (created_at !== undefined) {
+          updateData.created_at = created_at;
+        }
+        if (payment_date !== undefined) {
+          updateData.payment_date = payment_date;
+        }
+
+        // Update order total and dates
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({ total_cost })
+          .update(updateData)
           .eq('id', id);
 
         if (updateError) throw updateError;
