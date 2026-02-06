@@ -45,7 +45,7 @@ function ReportsPageContent() {
   useEffect(() => {
     if (reportData && reportData.itemsByDate && Object.keys(reportData.itemsByDate).length > 0 && selectedDates.length === 0) {
       const dates = Object.keys(reportData.itemsByDate);
-      const mostRecentDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+      const mostRecentDate = dates.sort((a, b) => b.localeCompare(a))[0]; // Sort YYYY-MM-DD strings in descending order
       setSelectedDates([mostRecentDate]);
     }
   }, [reportData, selectedDates.length]);
@@ -100,11 +100,13 @@ function ReportsPageContent() {
 
   // Helper function to get day from date string
   const getDayFromDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 0; // Return 0 for invalid dates
+    // dateString is now in format YYYY-MM-DD
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const day = parseInt(parts[2], 10);
+      return isNaN(day) ? 0 : day;
     }
-    return date.getDate();
+    return 0;
   };
 
   // Helper function to get month and year for display
@@ -114,14 +116,15 @@ function ReportsPageContent() {
     }
     // Get first date to extract month and year
     const firstDate = Object.keys(reportData.itemsByDate)[0];
-    const date = new Date(firstDate);
-    if (isNaN(date.getTime())) {
-      return ''; // Return empty string for invalid dates
+    // dateString is now in format YYYY-MM-DD
+    const parts = firstDate.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const monthIndex = parseInt(parts[1], 10) - 1; // Convert to 0-11
+      const monthName = monthOptions.find(m => parseInt(m.value) === monthIndex + 1)?.label || '';
+      return `${monthName} ${year}`;
     }
-    const monthIndex = date.getMonth(); // Returns 0-11
-    const monthName = monthOptions.find(m => parseInt(m.value) === monthIndex + 1)?.label || '';
-    const year = date.getFullYear();
-    return `${monthName} ${year}`;
+    return '';
   };
 
   // Calculate aggregated items across selected dates (memoized for performance)
@@ -255,7 +258,7 @@ function ReportsPageContent() {
                   size={1}
                 >
                   {Object.keys(reportData.itemsByDate)
-                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                    .sort((a, b) => b.localeCompare(a)) // Sort YYYY-MM-DD strings in descending order
                     .map((date) => (
                       <option key={date} value={date}>
                         Day {getDayFromDate(date)}

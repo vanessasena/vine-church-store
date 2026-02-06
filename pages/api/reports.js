@@ -47,7 +47,8 @@ export default async function handler(req, res) {
     // Aggregate by date
     const byDate = {};
     orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString('en-US');
+      // Extract date in YYYY-MM-DD format without timezone conversion
+      const date = order.created_at.split('T')[0];
       if (!byDate[date]) {
         byDate[date] = { total: 0, count: 0 };
       }
@@ -96,11 +97,12 @@ export default async function handler(req, res) {
     // Aggregate items by date
     const itemsByDate = {};
     orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString('en-US');
+      // Extract date in YYYY-MM-DD format without timezone conversion
+      const date = order.created_at.split('T')[0];
       if (!itemsByDate[date]) {
         itemsByDate[date] = {};
       }
-      
+
       if (order.order_items && order.order_items.length > 0) {
         order.order_items.forEach(item => {
           const itemName = item.item_name_at_time;
