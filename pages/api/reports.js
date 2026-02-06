@@ -1,5 +1,15 @@
 import { supabaseAdmin } from '../../lib/supabase-admin';
 
+// Helper function to convert UTC timestamp to EST date in YYYY-MM-DD format
+function formatDateEST(utcTimestamp) {
+  const date = new Date(utcTimestamp);
+  const estDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const year = estDate.getFullYear();
+  const month = String(estDate.getMonth() + 1).padStart(2, '0');
+  const day = String(estDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default async function handler(req, res) {
   const { method, query } = req;
 
@@ -47,12 +57,8 @@ export default async function handler(req, res) {
     // Aggregate by date
     const byDate = {};
     orders.forEach(order => {
-      // Convert UTC timestamp to local date (YYYY-MM-DD)
-      const date = new Date(order.created_at);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const localDate = `${year}-${month}-${day}`;
+      // Convert UTC timestamp to EST date (YYYY-MM-DD)
+      const localDate = formatDateEST(order.created_at);
 
       if (!byDate[localDate]) {
         byDate[localDate] = { total: 0, count: 0 };
@@ -102,12 +108,8 @@ export default async function handler(req, res) {
     // Aggregate items by date
     const itemsByDate = {};
     orders.forEach(order => {
-      // Convert UTC timestamp to local date (YYYY-MM-DD)
-      const date = new Date(order.created_at);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const localDate = `${year}-${month}-${day}`;
+      // Convert UTC timestamp to EST date (YYYY-MM-DD)
+      const localDate = formatDateEST(order.created_at);
 
       if (!itemsByDate[localDate]) {
         itemsByDate[localDate] = {};

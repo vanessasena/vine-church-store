@@ -45,8 +45,8 @@ function OrdersPageContent() {
   const [pageSize, setPageSize] = useState(10);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('customer_name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<'customer_name' | 'date'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [customerNameFilter, setCustomerNameFilter] = useState('');
   const [customerNameInput, setCustomerNameInput] = useState('');
   const [filteredTotal, setFilteredTotal] = useState<number | null>(null);
