@@ -47,13 +47,18 @@ export default async function handler(req, res) {
     // Aggregate by date
     const byDate = {};
     orders.forEach(order => {
-      // Extract date in YYYY-MM-DD format without timezone conversion
-      const date = order.created_at.split('T')[0];
-      if (!byDate[date]) {
-        byDate[date] = { total: 0, count: 0 };
+      // Convert UTC timestamp to local date (YYYY-MM-DD)
+      const date = new Date(order.created_at);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const localDate = `${year}-${month}-${day}`;
+
+      if (!byDate[localDate]) {
+        byDate[localDate] = { total: 0, count: 0 };
       }
-      byDate[date].total += order.total_cost;
-      byDate[date].count += 1;
+      byDate[localDate].total += order.total_cost;
+      byDate[localDate].count += 1;
     });
 
     // Aggregate by category
@@ -97,23 +102,28 @@ export default async function handler(req, res) {
     // Aggregate items by date
     const itemsByDate = {};
     orders.forEach(order => {
-      // Extract date in YYYY-MM-DD format without timezone conversion
-      const date = order.created_at.split('T')[0];
-      if (!itemsByDate[date]) {
-        itemsByDate[date] = {};
+      // Convert UTC timestamp to local date (YYYY-MM-DD)
+      const date = new Date(order.created_at);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const localDate = `${year}-${month}-${day}`;
+
+      if (!itemsByDate[localDate]) {
+        itemsByDate[localDate] = {};
       }
 
       if (order.order_items && order.order_items.length > 0) {
         order.order_items.forEach(item => {
           const itemName = item.item_name_at_time;
-          if (!itemsByDate[date][itemName]) {
-            itemsByDate[date][itemName] = {
+          if (!itemsByDate[localDate][itemName]) {
+            itemsByDate[localDate][itemName] = {
               quantity: 0,
               revenue: 0
             };
           }
-          itemsByDate[date][itemName].quantity += item.quantity;
-          itemsByDate[date][itemName].revenue += item.price_at_time * item.quantity;
+          itemsByDate[localDate][itemName].quantity += item.quantity;
+          itemsByDate[localDate][itemName].revenue += item.price_at_time * item.quantity;
         });
       }
     });
