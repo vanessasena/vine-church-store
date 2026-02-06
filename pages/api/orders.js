@@ -11,7 +11,16 @@ export default async function handler(req, res) {
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
 
-        // Build query
+        // Helper function to normalize strings (remove accents)
+        const normalizeString = (str) => {
+          if (!str) return '';
+          return str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+        };
+
+        // Build query without customer name filter initially
         let query = supabaseAdmin
           .from('orders')
           .select(`
@@ -30,11 +39,6 @@ export default async function handler(req, res) {
           query = query.eq('is_paid', false);
         }
 
-        // Apply customer name filter (case-insensitive)
-        if (customerName) {
-          query = query.ilike('customer_name', `%${customerName}%`);
-        }
-
         // Apply date filters
         if (startDate) {
           query = query.gte('created_at', startDate);
@@ -49,13 +53,39 @@ export default async function handler(req, res) {
         // Apply ordering based on sortBy parameter
         const orderColumn = sortBy === 'date' ? 'created_at' : 'customer_name';
         const ascending = sortOrder === 'asc';
-        query = query
-          .order(orderColumn, { ascending })
-          .range(offset, offset + limitNum - 1);
+        query = query.order(orderColumn, { ascending });
 
-        const { data, error, count } = await query;
+        // If customer name filter is provided, fetch all matching records
+        // then filter in JavaScript for accent-insensitive search
+        let data, count;
+        if (customerName) {
+          // Fetch all records matching other filters
+          const { data: allData, error, count: totalCount } = await query;
 
-        if (error) throw error;
+          if (error) throw error;
+
+          // Normalize search term
+          const normalizedSearch = normalizeString(customerName);
+
+          // Filter by normalized customer name
+          const filteredData = allData.filter(order => {
+            const normalizedName = normalizeString(order.customer_name);
+            return normalizedName.includes(normalizedSearch);
+          });
+
+          // Apply pagination manually
+          count = filteredData.length;
+          data = filteredData.slice(offset, offset + limitNum);
+        } else {
+          // No customer name filter - use database pagination
+          query = query.range(offset, offset + limitNum - 1);
+          const result = await query;
+
+          if (result.error) throw result.error;
+
+          data = result.data;
+          count = result.count;
+        }
 
         return res.status(200).json({
           orders: data,
