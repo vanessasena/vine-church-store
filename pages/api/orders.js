@@ -1,5 +1,14 @@
 import { supabaseAdmin } from '../../lib/supabase-admin';
 
+// Helper function to convert date to EST timezone and format as YYYY-MM-DD
+function formatDateEST(date) {
+  const estDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const year = estDate.getFullYear();
+  const month = String(estDate.getMonth() + 1).padStart(2, '0');
+  const day = String(estDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default async function handler(req, res) {
   const { method } = req;
 
@@ -113,10 +122,20 @@ export default async function handler(req, res) {
         // Calculate total cost
         const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // Create order
+        // Get current time in EST timezone
+        const now = new Date();
+        const estTimeString = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+        const estDate = new Date(estTimeString);
+
+        // Create order with EST timestamp
         const { data: orderData, error: orderError } = await supabaseAdmin
           .from('orders')
-          .insert([{ customer_name, total_cost, is_paid: false }])
+          .insert([{
+            customer_name,
+            total_cost,
+            is_paid: false,
+            created_at: estDate.toISOString()
+          }])
           .select()
           .single();
 
