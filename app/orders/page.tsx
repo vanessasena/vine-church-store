@@ -49,6 +49,7 @@ function OrdersPageContent() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [customerNameFilter, setCustomerNameFilter] = useState('');
   const [customerNameInput, setCustomerNameInput] = useState('');
+  const [filteredTotal, setFilteredTotal] = useState<number | null>(null);
 
   // Debounce customer name filter - only apply after 2 seconds of typing
   useEffect(() => {
@@ -104,9 +105,11 @@ function OrdersPageContent() {
         setOrders(ordersData.orders);
         setTotalPages(ordersData.totalPages || 1);
         setTotalCount(ordersData.totalCount || 0);
+        setFilteredTotal(ordersData.filteredTotal || null);
       } else {
         // Fallback for old format
         setOrders(ordersData);
+        setFilteredTotal(null);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -162,11 +165,11 @@ function OrdersPageContent() {
   const getFilteredItems = () => {
     // Filter to show only active items
     let filtered = items.filter(item => item.is_active);
-    
+
     if (selectedCategory) {
       filtered = filtered.filter(item => item.category?.name === selectedCategory);
     }
-    
+
     return filtered;
   };
 
@@ -745,6 +748,25 @@ function OrdersPageContent() {
                 )}
               </div>
             </div>
+
+            {/* Filtered Total - Only show when filtering by customer name */}
+            {customerNameFilter && filteredTotal !== null && (
+              <div className="p-4 bg-green-50 rounded-md border border-green-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Total for "{customerNameFilter}"
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      {totalCount} {totalCount === 1 ? 'order' : 'orders'} found
+                    </p>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${filteredTotal.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Date Filter Section */}

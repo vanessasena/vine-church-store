@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
         // If customer name filter is provided, fetch all matching records
         // then filter in JavaScript for accent-insensitive search
-        let data, count;
+        let data, count, filteredTotal;
         if (customerName) {
           // Fetch all records matching other filters
           const { data: allData, error, count: totalCount } = await query;
@@ -72,6 +72,9 @@ export default async function handler(req, res) {
             const normalizedName = normalizeString(order.customer_name);
             return normalizedName.includes(normalizedSearch);
           });
+
+          // Calculate total cost of filtered orders
+          filteredTotal = filteredData.reduce((sum, order) => sum + order.total_cost, 0);
 
           // Apply pagination manually
           count = filteredData.length;
@@ -92,7 +95,8 @@ export default async function handler(req, res) {
           totalCount: count,
           page: pageNum,
           limit: limitNum,
-          totalPages: Math.ceil(count / limitNum)
+          totalPages: Math.ceil(count / limitNum),
+          filteredTotal: filteredTotal || undefined
         });
       } catch (error) {
         return res.status(500).json({ error: error.message });
