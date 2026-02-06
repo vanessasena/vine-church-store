@@ -17,7 +17,7 @@ export default async function handler(req, res) {
           return str
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
+            .toLowerCase().trim();
         };
 
         // Build query without customer name filter initially
