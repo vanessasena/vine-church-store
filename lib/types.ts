@@ -30,6 +30,7 @@ export interface Order {
   id: string;
   customer_name: string;
   total_cost: number;
+  discount: number;
   is_paid: boolean;
   payment_type?: string | null;
   created_at: string;

@@ -37,6 +37,8 @@ function OrdersPageContent() {
   const [orderFilter, setOrderFilter] = useState<'all' | 'unpaid'>('unpaid');
   const [clickedItemId, setClickedItemId] = useState<string | null>(null);
   const [clickedEditItemId, setClickedEditItemId] = useState<string | null>(null);
+  const [discount, setDiscount] = useState<number>(0);
+  const [editDiscount, setEditDiscount] = useState<number>(0);
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,11 +152,16 @@ function OrdersPageContent() {
     ));
   };
 
-  const getTotalCost = () => {
+  const getSubtotal = () => {
     return cart.reduce((sum, item) => {
       const price = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
       return sum + (price * item.quantity);
     }, 0);
+  };
+
+  const getTotalCost = () => {
+    const subtotal = getSubtotal();
+    return Math.max(0, subtotal - discount);
   };
 
   const getUniqueCategories = () => {
@@ -191,6 +198,7 @@ function OrdersPageContent() {
     try {
       const orderData = {
         customer_name: customerName,
+        discount: discount,
         items: cart.map(item => ({
           id: item.id,
           quantity: item.quantity,
@@ -210,6 +218,7 @@ function OrdersPageContent() {
       if (response.ok) {
         setCart([]);
         setCustomerName('');
+        setDiscount(0);
         setShowNewOrder(false);
         // Sort by date descending to show new order at top
         setSortBy('date');
@@ -292,6 +301,7 @@ function OrdersPageContent() {
 
   const startEditOrder = (order: Order) => {
     setEditingOrder(order);
+    setEditDiscount(order.discount || 0);
     // Convert order items to cart format
     const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
       const currentItem = orderItem.item;
@@ -346,11 +356,16 @@ function OrdersPageContent() {
     ));
   };
 
-  const getEditTotalCost = () => {
+  const getEditSubtotal = () => {
     return editCart.reduce((sum, item) => {
       const price = item.has_custom_price ? (item.customPrice || 0) : (item.price || 0);
       return sum + (price * item.quantity);
     }, 0);
+  };
+
+  const getEditTotalCost = () => {
+    const subtotal = getEditSubtotal();
+    return Math.max(0, subtotal - editDiscount);
   };
 
   const handleUpdateOrder = async (e: React.FormEvent) => {
@@ -373,6 +388,7 @@ function OrdersPageContent() {
     try {
       const orderData = {
         id: editingOrder.id,
+        discount: editDiscount,
         items: editCart.map(item => ({
           id: item.id,
           quantity: item.quantity,
@@ -393,6 +409,7 @@ function OrdersPageContent() {
         setEditCart([]);
         setEditingOrder(null);
         setShowEditOrder(false);
+        setEditDiscount(0);
         // Sort by date descending to show updated order at top
         setSortBy('date');
         setSortOrder('desc');
@@ -628,11 +645,32 @@ function OrdersPageContent() {
                         </div>
                       );
                     })}
-                    <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between items-center">
-                      <span className="font-bold text-lg">Total:</span>
-                      <span className="font-bold text-lg text-green-600">
-                        ${getTotalCost().toFixed(2)}
-                      </span>
+                    <div className="border-t border-gray-300 mt-2 pt-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-700">Subtotal:</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          ${getSubtotal().toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm text-orange-700 font-medium">Discount ($):</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={getSubtotal()}
+                          value={discount || ''}
+                          onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                          className="w-28 px-2 py-1 border border-orange-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-orange-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">Total:</span>
+                        <span className="font-bold text-lg text-green-600">
+                          ${getTotalCost().toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -651,6 +689,7 @@ function OrdersPageContent() {
                   onClick={() => {
                     setCart([]);
                     setCustomerName('');
+                    setDiscount(0);
                     setShowNewOrder(false);
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
@@ -851,6 +890,11 @@ function OrdersPageContent() {
                         <div className="text-xl font-bold text-green-600">
                           ${order.total_cost.toFixed(2)}
                         </div>
+                        {order.discount > 0 && (
+                          <div className="text-xs text-orange-600 font-medium">
+                            Discount: -${order.discount.toFixed(2)}
+                          </div>
+                        )}
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                             order.is_paid
@@ -1200,11 +1244,32 @@ function OrdersPageContent() {
                           </div>
                         );
                       })}
-                      <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between items-center">
-                        <span className="font-bold text-lg">Total:</span>
-                        <span className="font-bold text-lg text-green-600">
-                          ${getEditTotalCost().toFixed(2)}
-                        </span>
+                      <div className="border-t border-gray-300 mt-2 pt-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-700">Subtotal:</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            ${getEditSubtotal().toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm text-orange-700 font-medium">Discount ($):</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max={getEditSubtotal()}
+                            value={editDiscount || ''}
+                            onChange={(e) => setEditDiscount(parseFloat(e.target.value) || 0)}
+                            className="w-28 px-2 py-1 border border-orange-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-orange-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-lg">Total:</span>
+                          <span className="font-bold text-lg text-green-600">
+                            ${getEditTotalCost().toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1224,6 +1289,7 @@ function OrdersPageContent() {
                       setEditCart([]);
                       setEditingOrder(null);
                       setShowEditOrder(false);
+                      setEditDiscount(0);
                       setSelectedCategory('');
                     }}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
