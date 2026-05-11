@@ -113,14 +113,16 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { customer_name, items } = req.body;
+        const { customer_name, items, discount } = req.body;
 
         if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
         // Calculate total cost
-        const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const discountAmount = Math.max(0, Math.min(parseFloat(discount) || 0, subtotal));
+        const total_cost = subtotal - discountAmount;
 
         // Get current time in EST timezone
         const now = new Date();
@@ -133,6 +135,7 @@ export default async function handler(req, res) {
           .insert([{
             customer_name,
             total_cost,
+            discount: discountAmount,
             is_paid: false,
             created_at: estDate.toISOString()
           }])
@@ -216,7 +219,7 @@ export default async function handler(req, res) {
 
     case 'PATCH':
       try {
-        const { id, items } = req.body;
+        const { id, items, discount } = req.body;
 
         if (!id || !items || !Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ error: 'Order ID and items are required' });
@@ -236,12 +239,14 @@ export default async function handler(req, res) {
         }
 
         // Calculate new total cost
-        const total_cost = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const discountAmount = Math.max(0, Math.min(parseFloat(discount) || 0, subtotal));
+        const total_cost = subtotal - discountAmount;
 
         // Update order total
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({ total_cost })
+          .update({ total_cost, discount: discountAmount })
           .eq('id', id);
 
         if (updateError) throw updateError;

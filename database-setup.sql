@@ -25,6 +25,7 @@ CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_name TEXT NOT NULL,
   total_cost DECIMAL(10, 2) NOT NULL,
+  discount DECIMAL(10, 2) DEFAULT 0,
   is_paid BOOLEAN DEFAULT FALSE,
   payment_type TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
