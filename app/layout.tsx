@@ -3,6 +3,7 @@ import "./globals.css";
 import EnvironmentBanner from "./components/EnvironmentBanner";
 import Header from "./components/Header";
 import DynamicLayout from "./components/DynamicLayout";
+import OfflineOverlay from "./components/OfflineOverlay";
 import { BannerProvider } from "./contexts/BannerContext";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className="antialiased">
         <AuthProvider>
           <BannerProvider>
+            <OfflineOverlay />
             <EnvironmentBanner />
             <Header />
             <DynamicLayout>
