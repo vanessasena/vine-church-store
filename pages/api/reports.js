@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { month, year } = query;
+    const { month, year, category } = query;
 
     // Build the query
     let supabaseQuery = supabaseAdmin
@@ -50,9 +50,28 @@ export default async function handler(req, res) {
         .lte('created_at', endDate);
     }
 
-    const { data: orders, error } = await supabaseQuery;
+    const { data: rawOrders, error } = await supabaseQuery;
 
     if (error) throw error;
+
+    // Apply category filter if provided. When a category is selected, the whole
+    // report reflects only the order items in that category: order items are
+    // filtered and order-level totals are recomputed from the remaining items.
+    let orders = rawOrders;
+    if (category) {
+      orders = rawOrders
+        .map(order => {
+          const filteredItems = (order.order_items || []).filter(
+            item => item.items?.category?.name === category
+          );
+          const total_cost = filteredItems.reduce(
+            (sum, item) => sum + item.price_at_time * item.quantity,
+            0
+          );
+          return { ...order, order_items: filteredItems, total_cost };
+        })
+        .filter(order => order.order_items.length > 0);
+    }
 
     // Aggregate by date
     const byDate = {};
