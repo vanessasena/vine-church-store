@@ -33,13 +33,19 @@ function ReportsPageContent() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>((currentDate.getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState<string>(currentDate.getFullYear().toString());
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     fetchReportData();
     // Clear selected dates when filters change so we can set new defaults
     setSelectedDates([]);
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, selectedCategory]);
 
   // Set the most recent date when reportData is loaded (default selection)
   useEffect(() => {
@@ -50,13 +56,31 @@ function ReportsPageContent() {
     }
   }, [reportData, selectedDates.length]);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setCategories(data.map((c: { name: string }) => c.name));
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      let url = '/api/reports';
+      const params = new URLSearchParams();
       if (selectedMonth && selectedYear) {
-        url += `?month=${selectedMonth}&year=${selectedYear}`;
+        params.set('month', selectedMonth);
+        params.set('year', selectedYear);
       }
+      if (selectedCategory) {
+        params.set('category', selectedCategory);
+      }
+      const queryString = params.toString();
+      const url = queryString ? `/api/reports?${queryString}` : '/api/reports';
       const response = await fetch(url);
       const data = await response.json();
       setReportData(data);
@@ -70,6 +94,7 @@ function ReportsPageContent() {
   const handleClearFilter = () => {
     setSelectedMonth('');
     setSelectedYear('');
+    setSelectedCategory('');
   };
 
   // Generate year options (current year and 5 years back)
@@ -181,7 +206,7 @@ function ReportsPageContent() {
 
         {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">Filter by Month</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Filter</h2>
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -217,7 +242,24 @@ function ReportsPageContent() {
                 ))}
               </select>
             </div>
-            {(selectedMonth || selectedYear) && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(selectedMonth || selectedYear || selectedCategory) && (
               <div>
                 <button
                   onClick={handleClearFilter}
@@ -228,11 +270,15 @@ function ReportsPageContent() {
               </div>
             )}
           </div>
-          {selectedMonth && selectedYear && (
+          {(selectedMonth && selectedYear) || selectedCategory ? (
             <div className="mt-4 text-sm text-gray-600">
-              Showing results for {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}
+              Showing results
+              {selectedMonth && selectedYear && (
+                <> for {monthOptions[parseInt(selectedMonth) - 1]?.label} {selectedYear}</>
+              )}
+              {selectedCategory && <> in category &quot;{selectedCategory}&quot;</>}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Reports Grid */}
