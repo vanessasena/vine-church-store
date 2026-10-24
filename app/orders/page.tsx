@@ -26,6 +26,8 @@ function OrdersPageContent() {
   const [loading, setLoading] = useState(true);
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // Page-wide category filter: filters order history and restricts new/edit order items to a single category
+  const [pageCategory, setPageCategory] = useState<string>('');
   const [showPaymentTypeModal, setShowPaymentTypeModal] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<string | null>(null);
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
@@ -120,8 +122,22 @@ function OrdersPageContent() {
     }
   };
 
+  const getItemCategoryName = (item: Pick<CartItem, 'category'>) => {
+    return typeof item.category === 'string'
+      ? item.category
+      : item.category?.name || 'Unknown';
+  };
+
   const addToCart = (item: Item) => {
     const existingItem = cart.find(i => i.id === item.id);
+
+    // Prevent mixing categories within a single order
+    const itemCategory = getItemCategoryName(item);
+    const conflictingItem = cart.find(i => getItemCategoryName(i) !== itemCategory);
+    if (conflictingItem) {
+      alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
+      return;
+    }
 
     if (existingItem) {
       setCart(cart.map(i =>
@@ -173,8 +189,10 @@ function OrdersPageContent() {
     // Filter to show only active items
     let filtered = items.filter(item => item.is_active);
 
-    if (selectedCategory) {
-      filtered = filtered.filter(item => item.category?.name === selectedCategory);
+    // When a page-wide category is selected, restrict items to that category
+    const activeCategory = pageCategory || selectedCategory;
+    if (activeCategory) {
+      filtered = filtered.filter(item => item.category?.name === activeCategory);
     }
 
     return filtered;
@@ -327,6 +345,14 @@ function OrdersPageContent() {
   const addToEditCart = (item: Item) => {
     const existingItem = editCart.find(i => i.id === item.id);
 
+    // Prevent mixing categories within a single order
+    const itemCategory = getItemCategoryName(item);
+    const conflictingItem = editCart.find(i => getItemCategoryName(i) !== itemCategory);
+    if (conflictingItem) {
+      alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
+      return;
+    }
+
     if (existingItem) {
       setEditCart(editCart.map(i =>
         i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
@@ -442,6 +468,20 @@ function OrdersPageContent() {
     return orders.reduce((sum, order) => sum + order.total_cost, 0);
   };
 
+  // Returns an order's items filtered by the page-wide category (if any).
+  const getVisibleOrderItems = (order: Order) => {
+    if (!pageCategory) return order.order_items || [];
+    return (order.order_items || []).filter(
+      (orderItem) => orderItem.item?.category?.name === pageCategory
+    );
+  };
+
+  // Orders that have at least one item in the selected page category.
+  const getVisibleOrders = () => {
+    if (!pageCategory) return orders;
+    return orders.filter((order) => getVisibleOrderItems(order).length > 0);
+  };
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -479,13 +519,40 @@ function OrdersPageContent() {
           </div>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowNewOrder(!showNewOrder)}
             className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition-colors"
           >
             {showNewOrder ? 'Hide New Order Form' : '+ New Order'}
           </button>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Category:</label>
+            <select
+              value={pageCategory}
+              onChange={(e) => {
+                setPageCategory(e.target.value);
+                setSelectedCategory('');
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="">All Categories</option>
+              {getUniqueCategories().map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            {pageCategory && (
+              <button
+                onClick={() => setPageCategory('')}
+                className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm font-medium"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {showNewOrder && (
@@ -511,7 +578,13 @@ function OrdersPageContent() {
                   <h3 className="text-lg font-semibold">Available Items</h3>
                 </div>
 
-                {items.length > 0 && (
+                {pageCategory && (
+                  <p className="mb-4 text-sm text-blue-700 bg-blue-50 px-3 py-2 rounded-md">
+                    Showing items in category &quot;{pageCategory}&quot;. Clear the category filter above to add items from a different category.
+                  </p>
+                )}
+
+                {items.length > 0 && !pageCategory && (
                   <div className="mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-gray-700">Filter by category:</span>
@@ -870,14 +943,16 @@ function OrdersPageContent() {
             </div>
           </div> */}
 
-          {orders.length === 0 ? (
+          {getVisibleOrders().length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              {orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
+              {pageCategory
+                ? `No orders with items in "${pageCategory}" found.`
+                : orderFilter === 'unpaid' ? 'No unpaid orders found.' : 'No orders yet. Create your first order to get started!'}
             </p>
           ) : (
             <>
               <div className="space-y-4">
-                {orders.map((order) => (
+                {getVisibleOrders().map((order) => (
                   <div key={order.id} className="border border-gray-200 rounded-md p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -912,11 +987,11 @@ function OrdersPageContent() {
                       </div>
                     </div>
 
-                    {order.order_items && order.order_items.length > 0 && (
+                    {getVisibleOrderItems(order).length > 0 && (
                       <div className="mb-3">
                         <h4 className="text-sm font-semibold mb-1">Items:</h4>
                         <ul className="text-sm text-gray-700">
-                          {order.order_items.map((orderItem) => (
+                          {getVisibleOrderItems(order).map((orderItem) => (
                             <li key={orderItem.id} className="flex items-center justify-between py-1">
                               <div className="flex items-center gap-2">
                                 <span>
@@ -1115,7 +1190,13 @@ function OrdersPageContent() {
                     <h3 className="text-lg font-semibold">Available Items</h3>
                   </div>
 
-                  {items.length > 0 && (
+                  {pageCategory && (
+                    <p className="mb-4 text-sm text-blue-700 bg-blue-50 px-3 py-2 rounded-md">
+                      Showing items in category &quot;{pageCategory}&quot;. Clear the category filter above to add items from a different category.
+                    </p>
+                  )}
+
+                  {items.length > 0 && !pageCategory && (
                     <div className="mb-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-gray-700">Filter by category:</span>
