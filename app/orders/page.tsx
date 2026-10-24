@@ -10,6 +10,18 @@ interface CartItem extends Omit<Item, 'category'> {
   category?: string | Item['category']; // Allow both string and Category object, make optional
 }
 
+// Donation category is always shown in order history and may be mixed with
+// another category in a single order. Matched case/accent-insensitively.
+const isDonationCategory = (category?: string | null) => {
+  if (!category) return false;
+  const normalized = category
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+  return normalized === 'doacao';
+};
+
 export default function OrdersPage() {
   return (
     <ProtectedRoute>
@@ -131,12 +143,17 @@ function OrdersPageContent() {
   const addToCart = (item: Item) => {
     const existingItem = cart.find(i => i.id === item.id);
 
-    // Prevent mixing categories within a single order
+    // Prevent mixing categories within a single order (donations are exempt)
     const itemCategory = getItemCategoryName(item);
-    const conflictingItem = cart.find(i => getItemCategoryName(i) !== itemCategory);
-    if (conflictingItem) {
-      alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
-      return;
+    if (!isDonationCategory(itemCategory)) {
+      const conflictingItem = cart.find(i => {
+        const otherCategory = getItemCategoryName(i);
+        return !isDonationCategory(otherCategory) && otherCategory !== itemCategory;
+      });
+      if (conflictingItem) {
+        alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
+        return;
+      }
     }
 
     if (existingItem) {
@@ -189,10 +206,13 @@ function OrdersPageContent() {
     // Filter to show only active items
     let filtered = items.filter(item => item.is_active);
 
-    // When a page-wide category is selected, restrict items to that category
+    // When a page-wide category is selected, restrict items to that category.
+    // Donation items remain available so they can be mixed into any order.
     const activeCategory = pageCategory || selectedCategory;
     if (activeCategory) {
-      filtered = filtered.filter(item => item.category?.name === activeCategory);
+      filtered = filtered.filter(
+        item => item.category?.name === activeCategory || isDonationCategory(item.category?.name)
+      );
     }
 
     return filtered;
@@ -345,12 +365,17 @@ function OrdersPageContent() {
   const addToEditCart = (item: Item) => {
     const existingItem = editCart.find(i => i.id === item.id);
 
-    // Prevent mixing categories within a single order
+    // Prevent mixing categories within a single order (donations are exempt)
     const itemCategory = getItemCategoryName(item);
-    const conflictingItem = editCart.find(i => getItemCategoryName(i) !== itemCategory);
-    if (conflictingItem) {
-      alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
-      return;
+    if (!isDonationCategory(itemCategory)) {
+      const conflictingItem = editCart.find(i => {
+        const otherCategory = getItemCategoryName(i);
+        return !isDonationCategory(otherCategory) && otherCategory !== itemCategory;
+      });
+      if (conflictingItem) {
+        alert(`You can only add items from one category per order. This order already contains items from "${getItemCategoryName(conflictingItem)}".`);
+        return;
+      }
     }
 
     if (existingItem) {
@@ -469,14 +494,18 @@ function OrdersPageContent() {
   };
 
   // Returns an order's items filtered by the page-wide category (if any).
+  // Donation items are always included regardless of the selected category.
   const getVisibleOrderItems = (order: Order) => {
     if (!pageCategory) return order.order_items || [];
     return (order.order_items || []).filter(
-      (orderItem) => orderItem.item?.category?.name === pageCategory
+      (orderItem) =>
+        orderItem.item?.category?.name === pageCategory ||
+        isDonationCategory(orderItem.item?.category?.name)
     );
   };
 
-  // Orders that have at least one item in the selected page category.
+  // Orders with at least one item in the selected category, or any donation
+  // item (donations are always shown in history regardless of the filter).
   const getVisibleOrders = () => {
     if (!pageCategory) return orders;
     return orders.filter((order) => getVisibleOrderItems(order).length > 0);
