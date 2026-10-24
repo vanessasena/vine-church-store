@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { page = '1', limit = '10', startDate, endDate, filter, sortBy = 'customer_name', sortOrder = 'asc', customerName } = req.query;
+        const { page = '1', limit = '10', startDate, endDate, filter, sortBy = 'customer_name', sortOrder = 'asc', customerName, category } = req.query;
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
@@ -27,6 +27,23 @@ export default async function handler(req, res) {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase().trim();
+        };
+
+        // Donation items are always shown in order history regardless of the
+        // selected category, matched case/accent-insensitively.
+        const isDonationCategory = (name) => normalizeString(name) === 'doacao';
+
+        // An order matches the selected category if it has at least one item
+        // in that category, or any donation item.
+        const orderMatchesCategory = (order, selectedCategory) => {
+          const normalizedSelected = normalizeString(selectedCategory);
+          return (order.order_items || []).some((orderItem) => {
+            const itemCategory = orderItem.item?.category?.name;
+            return (
+              normalizeString(itemCategory) === normalizedSelected ||
+              isDonationCategory(itemCategory)
+            );
+          });
         };
 
         // Build query without customer name filter initially
@@ -64,23 +81,33 @@ export default async function handler(req, res) {
         const ascending = sortOrder === 'asc';
         query = query.order(orderColumn, { ascending });
 
-        // If customer name filter is provided, fetch all matching records
-        // then filter in JavaScript for accent-insensitive search
+        // If customer name or category filter is provided, fetch all matching
+        // records then filter in JavaScript. Category filtering must run before
+        // pagination because it depends on nested order_items, so it cannot use
+        // database range pagination.
         let data, count, filteredTotal;
-        if (customerName) {
+        if (customerName || category) {
           // Fetch all records matching other filters
-          const { data: allData, error, count: totalCount } = await query;
+          const { data: allData, error } = await query;
 
           if (error) throw error;
 
-          // Normalize search term
-          const normalizedSearch = normalizeString(customerName);
+          let filteredData = allData;
 
-          // Filter by normalized customer name
-          const filteredData = allData.filter(order => {
-            const normalizedName = normalizeString(order.customer_name);
-            return normalizedName.includes(normalizedSearch);
-          });
+          // Filter by normalized customer name (accent-insensitive)
+          if (customerName) {
+            const normalizedSearch = normalizeString(customerName);
+            filteredData = filteredData.filter(order => {
+              const normalizedName = normalizeString(order.customer_name);
+              return normalizedName.includes(normalizedSearch);
+            });
+          }
+
+          // Filter by category: keep orders with at least one item in the
+          // selected category, or any donation item.
+          if (category) {
+            filteredData = filteredData.filter(order => orderMatchesCategory(order, category));
+          }
 
           // Calculate total cost of filtered orders
           filteredTotal = filteredData.reduce((sum, order) => sum + order.total_cost, 0);
@@ -89,7 +116,7 @@ export default async function handler(req, res) {
           count = filteredData.length;
           data = filteredData.slice(offset, offset + limitNum);
         } else {
-          // No customer name filter - use database pagination
+          // No JS-side filter - use database pagination
           query = query.range(offset, offset + limitNum - 1);
           const result = await query;
 

@@ -79,7 +79,7 @@ function OrdersPageContent() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize, startDate, endDate, orderFilter, sortBy, sortOrder, customerNameFilter]);
+  }, [currentPage, pageSize, startDate, endDate, orderFilter, sortBy, sortOrder, customerNameFilter, pageCategory]);
 
   const fetchData = async () => {
     try {
@@ -104,6 +104,9 @@ function OrdersPageContent() {
       }
       if (customerNameFilter) {
         params.append('customerName', customerNameFilter);
+      }
+      if (pageCategory) {
+        params.append('category', pageCategory);
       }
 
       const [itemsRes, ordersRes] = await Promise.all([
@@ -563,6 +566,7 @@ function OrdersPageContent() {
               onChange={(e) => {
                 setPageCategory(e.target.value);
                 setSelectedCategory('');
+                setCurrentPage(1);
               }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
@@ -575,7 +579,10 @@ function OrdersPageContent() {
             </select>
             {pageCategory && (
               <button
-                onClick={() => setPageCategory('')}
+                onClick={() => {
+                  setPageCategory('');
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm font-medium"
               >
                 Clear
