@@ -246,7 +246,7 @@ export default async function handler(req, res) {
 
     case 'PATCH':
       try {
-        const { id, items, discount } = req.body;
+        const { id, items, discount, customer_name, created_at } = req.body;
 
         if (!id || !items || !Array.isArray(items) || items.length === 0) {
           return res.status(400).json({ error: 'Order ID and items are required' });
@@ -270,10 +270,32 @@ export default async function handler(req, res) {
         const discountAmount = Math.max(0, Math.min(parseFloat(discount) || 0, subtotal));
         const total_cost = subtotal - discountAmount;
 
+        // Build order update object
+        const orderUpdate = { total_cost, discount: discountAmount };
+
+        // Optionally update customer name
+        if (customer_name !== undefined) {
+          const trimmedName = String(customer_name).trim();
+          if (!trimmedName) {
+            return res.status(400).json({ error: 'Customer name cannot be empty' });
+          }
+          orderUpdate.customer_name = trimmedName;
+        }
+
+        // Optionally update date of purchase (stored in EST timezone)
+        if (created_at !== undefined && created_at !== null && created_at !== '') {
+          const estTimeString = new Date(created_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
+          const estDate = new Date(estTimeString);
+          if (isNaN(estDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date of purchase' });
+          }
+          orderUpdate.created_at = estDate.toISOString();
+        }
+
         // Update order total
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({ total_cost, discount: discountAmount })
+          .update(orderUpdate)
           .eq('id', id);
 
         if (updateError) throw updateError;
