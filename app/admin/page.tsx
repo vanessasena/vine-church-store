@@ -130,6 +130,19 @@ function AdminPageContent() {
           <p className="text-slate-600">Review and approve access requests</p>
         </div>
 
+        {/* Admin Tools */}
+        <div className="mb-8">
+          <a
+            href="/admin/orders"
+            className="block bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+          >
+            <h2 className="text-xl font-bold text-slate-900 mb-1">Edit Order Details</h2>
+            <p className="text-slate-600">
+              Update the customer name and date of purchase of any order, including paid orders.
+            </p>
+          </a>
+        </div>
+
         {/* Pending Requests */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">

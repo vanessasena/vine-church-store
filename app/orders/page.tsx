@@ -22,14 +22,6 @@ const isDonationCategory = (category?: string | null) => {
   return normalized === 'doacao';
 };
 
-// Convert a stored created_at ISO string (EST wall-clock time) into a
-// YYYY-MM-DD value suitable for a native date input.
-const toDateInputValue = (isoString?: string) => {
-  if (!isoString) return '';
-  const match = isoString.match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : '';
-};
-
 export default function OrdersPage() {
   return (
     <ProtectedRoute>
@@ -61,8 +53,6 @@ function OrdersPageContent() {
   const [clickedEditItemId, setClickedEditItemId] = useState<string | null>(null);
   const [discount, setDiscount] = useState<number>(0);
   const [editDiscount, setEditDiscount] = useState<number>(0);
-  const [editCustomerName, setEditCustomerName] = useState<string>('');
-  const [editPurchaseDate, setEditPurchaseDate] = useState<string>('');
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -353,8 +343,6 @@ function OrdersPageContent() {
   const startEditOrder = (order: Order) => {
     setEditingOrder(order);
     setEditDiscount(order.discount || 0);
-    setEditCustomerName(order.customer_name);
-    setEditPurchaseDate(toDateInputValue(order.created_at));
     // Convert order items to cart format
     const cartItems: CartItem[] = (order.order_items || []).map(orderItem => {
       const currentItem = orderItem.item;
@@ -439,11 +427,6 @@ function OrdersPageContent() {
 
     if (!editingOrder) return;
 
-    if (!editCustomerName.trim()) {
-      alert('Please enter a customer name');
-      return;
-    }
-
     if (editCart.length === 0) {
       alert('Please add items to the order');
       return;
@@ -460,8 +443,6 @@ function OrdersPageContent() {
       const orderData = {
         id: editingOrder.id,
         discount: editDiscount,
-        customer_name: editCustomerName.trim(),
-        created_at: editPurchaseDate || undefined,
         items: editCart.map(item => ({
           id: item.id,
           quantity: item.quantity,
@@ -483,8 +464,6 @@ function OrdersPageContent() {
         setEditingOrder(null);
         setShowEditOrder(false);
         setEditDiscount(0);
-        setEditCustomerName('');
-        setEditPurchaseDate('');
         // Sort by date descending to show updated order at top
         setSortBy('date');
         setSortOrder('desc');
@@ -1242,32 +1221,6 @@ function OrdersPageContent() {
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 my-8">
               <h2 className="text-2xl font-semibold mb-4">Edit Order - {editingOrder.customer_name}</h2>
               <form onSubmit={handleUpdateOrder}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Customer Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editCustomerName}
-                      onChange={(e) => setEditCustomerName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter customer name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Purchase
-                    </label>
-                    <input
-                      type="date"
-                      value={editPurchaseDate}
-                      onChange={(e) => setEditPurchaseDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-semibold">Available Items</h3>
@@ -1454,8 +1407,6 @@ function OrdersPageContent() {
                       setEditingOrder(null);
                       setShowEditOrder(false);
                       setEditDiscount(0);
-                      setEditCustomerName('');
-                      setEditPurchaseDate('');
                       setSelectedCategory('');
                     }}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
