@@ -79,11 +79,19 @@ export default async function handler(req, res) {
           orderUpdate.customer_name = trimmedName;
         }
 
-        // Update date of purchase (stored in EST timezone, consistent with
-        // order creation in /api/orders).
+        // Update date of purchase. The client sends a date-only string
+        // (YYYY-MM-DD) from a native date input. Parsing it directly with
+        // new Date() would treat it as UTC midnight, which converts to the
+        // previous day in EST (UTC-4/5) and saves the wrong date. Instead,
+        // parse the calendar components and anchor the time at noon EST so
+        // the stored date always matches the selected day.
         if (created_at !== undefined && created_at !== null && created_at !== '') {
-          const estTimeString = new Date(created_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
-          const estDate = new Date(estTimeString);
+          const match = String(created_at).match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (!match) {
+            return res.status(400).json({ error: 'Invalid date of purchase' });
+          }
+          const [, year, month, day] = match;
+          const estDate = new Date(`${year}-${month}-${day}T12:00:00-05:00`);
           if (isNaN(estDate.getTime())) {
             return res.status(400).json({ error: 'Invalid date of purchase' });
           }
