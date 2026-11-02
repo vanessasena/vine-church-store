@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Item, Order } from '@/lib/types';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
@@ -36,6 +36,8 @@ function OrdersPageContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const isSubmittingOrderRef = useRef(false);
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   // Page-wide category filter: filters order history and restricts new/edit order items to a single category
@@ -224,6 +226,8 @@ function OrdersPageContent() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmittingOrderRef.current) return;
+
     if (cart.length === 0) {
       alert('Please add items to the cart');
       return;
@@ -235,6 +239,9 @@ function OrdersPageContent() {
       alert('Please set prices for all custom price items');
       return;
     }
+
+    isSubmittingOrderRef.current = true;
+    setIsSubmittingOrder(true);
 
     try {
       const orderData = {
@@ -269,6 +276,9 @@ function OrdersPageContent() {
       }
     } catch (error) {
       console.error('Error creating order:', error);
+    } finally {
+      isSubmittingOrderRef.current = false;
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -788,10 +798,10 @@ function OrdersPageContent() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || isSubmittingOrder}
                   className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Create Order
+                  {isSubmittingOrder ? 'Creating Order...' : 'Create Order'}
                 </button>
                 <button
                   type="button"
