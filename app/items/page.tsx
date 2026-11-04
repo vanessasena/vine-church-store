@@ -69,10 +69,17 @@ function ItemsPageContent({
   setImagePreview: (preview: string) => void;
 }) {
   const refItemName = useRef<HTMLInputElement>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'active' | 'inactive'>('active');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
 
   useEffect(() => {
     fetchItems();
   }, []);
+
+  useEffect(() => {
+    if (formOpen && editingId) refItemName.current?.focus();
+  }, [formOpen, editingId]);
 
   const fetchItems = async () => {
     try {
@@ -207,6 +214,7 @@ function ItemsPageContent({
       setFormData({ name: '', category: '', categoryId: '', subcategory: '', price: '', hasCustomPrice: false, imageUrl: '' });
       setImageFile(null);
       setImagePreview('');
+      setFormOpen(false);
       fetchItems(); // This will now also update the categories list
     } catch (error) {
       console.error('Error saving item:', error);
@@ -227,7 +235,7 @@ function ItemsPageContent({
     setImageFile(null);
     setEditingId(item.id);
     setEditingItem(item);
-    refItemName.current?.focus();
+    setFormOpen(true);
   };
 
   const handleArchive = async (id: string) => {
@@ -271,10 +279,16 @@ function ItemsPageContent({
     setImagePreview('');
   };
 
-  // Filter items based on selected category
-  const filteredItems = selectedCategoryFilter
-    ? items.filter(item => item.category_id === selectedCategoryFilter)
-    : items;
+  const filteredItems = items.filter(item => {
+    const matchesCategory = !selectedCategoryFilter || item.category_id === selectedCategoryFilter;
+    const query = searchQuery.trim().toLocaleLowerCase();
+    const matchesSearch = !query || [item.name, item.subcategory, item.category?.name]
+      .some(value => value?.toLocaleLowerCase().includes(query));
+    return matchesCategory && matchesSearch;
+  });
+  const activeItemsCount = filteredItems.filter(item => item.is_active).length;
+  const inactiveItemsCount = filteredItems.length - activeItemsCount;
+  const visibleItems = filteredItems.filter(item => Boolean(item.is_active) === (selectedStatus === 'active'));
 
   // Reset category filter if selected category no longer exists
   useEffect(() => {
@@ -292,24 +306,37 @@ function ItemsPageContent({
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50 fixed-colors">
+    <div className="min-h-screen p-4 bg-gray-50 fixed-colors sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Items Management</h1>
-              <p className="text-gray-600">Register and manage items</p>
+              <h1 className="text-2xl font-bold text-gray-900 sm:text-4xl">Items Management</h1>
+              <p className="mt-1 text-sm text-gray-600 sm:text-base">Register and manage items</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-8">
           {/* Form Section */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-semibold mb-4">
-                {editingId ? 'Edit Item' : 'Add New Item'}
-              </h2>
+          <div className="order-2 lg:order-1 lg:col-span-1">
+            <div className="rounded-lg bg-white shadow-md">
+              <div className="flex items-center justify-between p-4 sm:p-6 lg:pb-0">
+                <h2 className="text-xl font-semibold sm:text-2xl">
+                  {editingId ? 'Edit Item' : 'Add New Item'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editingId) cancelEdit();
+                    setFormOpen(!formOpen);
+                  }}
+                  className="min-h-11 rounded-md bg-blue-600 px-4 font-medium text-white hover:bg-blue-700 lg:hidden"
+                >
+                  {formOpen ? 'Close' : 'Add item'}
+                </button>
+              </div>
+              <div className={`${formOpen ? 'block' : 'hidden'} p-4 pt-0 sm:p-6 sm:pt-0 lg:block`}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -437,133 +464,129 @@ function ItemsPageContent({
                   )}
                 </div>
               </form>
+              </div>
             </div>
           </div>
 
           {/* Items List Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-semibold">Items List</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Showing {filteredItems.length} of {items.length} items
-                    {selectedCategoryFilter && (
-                      <span className="ml-1">
-                        in {categories.find(c => c.id === selectedCategoryFilter)?.name}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
-                  <select
-                    value={selectedCategoryFilter}
-                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div className="order-1 lg:order-2 lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold sm:text-2xl">Items List</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Showing {visibleItems.length} of {filteredItems.length} {selectedStatus} items
+                  {selectedCategoryFilter && (
+                    <span> in {categories.find(c => c.id === selectedCategoryFilter)?.name}</span>
+                  )}
+                </p>
               </div>
-              {filteredItems.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  {selectedCategoryFilter
-                    ? 'No items found in the selected category.'
-                    : 'No items yet. Add your first item to get started!'
-                  }
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="sr-only" htmlFor="item-search">Search items</label>
+                <input
+                  id="item-search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search items..."
+                  className="min-h-11 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <label className="sr-only" htmlFor="item-category-filter">Filter by category</label>
+                <select
+                  id="item-category-filter"
+                  value={selectedCategoryFilter}
+                  onChange={e => setSelectedCategoryFilter(e.target.value)}
+                  className="min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Filter by item status">
+                <button
+                  type="button"
+                  aria-pressed={selectedStatus === 'active'}
+                  onClick={() => setSelectedStatus('active')}
+                  className={`min-h-11 rounded-md px-3 font-medium ${
+                    selectedStatus === 'active'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Active ({activeItemsCount})
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={selectedStatus === 'inactive'}
+                  onClick={() => setSelectedStatus('inactive')}
+                  className={`min-h-11 rounded-md px-3 font-medium ${
+                    selectedStatus === 'inactive'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Inactive ({inactiveItemsCount})
+                </button>
+              </div>
+              {visibleItems.length === 0 ? (
+                <p className="py-10 text-center text-gray-500">
+                  {filteredItems.length === 0
+                    ? 'No items match your search and filters.'
+                    : `No ${selectedStatus} items found.`}
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Image</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredItems.map((item) => (
-                        <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            {item.image_url ? (
-                              <img
-                                src={item.image_url}
-                                alt={item.name}
-                                className="w-12 h-12 object-cover rounded-md border border-gray-300"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
-                                No image
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">{item.name}</td>
-                          <td className="py-3 px-4">
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-                              {item.category?.name || 'Unknown'}
-                            </span>
-                            {item.subcategory && (
-                              <div className="text-sm text-gray-600 mt-1">{item.subcategory}</div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            {item.has_custom_price ? (
-                              <span className="text-purple-600 font-medium">Custom</span>
-                            ) : (
-                              `$${item.price?.toFixed(2) || '0.00'}`
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                                item.is_active
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {item.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => toggleActive(item.id, item.is_active)}
-                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                  item.is_active
-                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }`}
-                              >
-                                {item.is_active ? 'Deactivate' : 'Activate'}
-                              </button>
-                              <button
-                                onClick={() => handleEdit(item)}
-                                className="text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleArchive(item.id)}
-                                className="text-red-600 hover:text-red-800 font-medium"
-                              >
-                                Archive
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleItems.map(item => (
+                    <article key={item.id} className="min-w-0 rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-start gap-3">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-md border border-gray-200 object-cover" />
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500">
+                            No image
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="break-words font-semibold text-gray-900">{item.name}</h3>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {item.category?.name || 'Unknown'}
+                            {item.subcategory && ` · ${item.subcategory}`}
+                          </p>
+                          <p className="mt-2 font-medium text-gray-900">
+                            {item.has_custom_price ? 'Custom price' : `$${item.price?.toFixed(2) || '0.00'}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleActive(item.id, item.is_active)}
+                          className={`min-h-11 rounded-md px-2 text-sm font-medium ${
+                            item.is_active
+                              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          {item.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(item)}
+                          className="min-h-11 rounded-md bg-blue-50 px-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleArchive(item.id)}
+                          className="min-h-11 rounded-md bg-red-50 px-2 text-sm font-medium text-red-700 hover:bg-red-100"
+                        >
+                          Archive
+                        </button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               )}
             </div>
