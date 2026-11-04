@@ -91,7 +91,7 @@ npm start
    - Price: e.g., 2.50
 3. Click "Add Item"
 4. Items appear in the table on the right
-5. Use Edit/Delete buttons to modify items
+5. Use Edit/Archive buttons to modify items. Archived items are hidden from item lists and order selection, while existing order history is preserved.
 
 ### Managing Orders
 

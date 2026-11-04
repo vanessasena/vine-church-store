@@ -13,6 +13,7 @@ export default async function handler(req, res) {
             *,
             category:categories(*)
           `)
+          .eq('is_archived', false)
           .order('name', { ascending: true })
           .order('name', { referencedTable: 'categories', ascending: true });
 
@@ -134,7 +135,7 @@ export default async function handler(req, res) {
 
         const { error } = await supabaseAdmin
           .from('items')
-          .delete()
+          .update({ is_archived: true })
           .eq('id', id);
 
         if (error) throw error;

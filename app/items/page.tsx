@@ -230,18 +230,22 @@ function ItemsPageContent({
     refItemName.current?.focus();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+  const handleArchive = async (id: string) => {
+    if (!confirm('Are you sure you want to archive this item? It will be hidden from item lists, but order history will be preserved.')) return;
 
     try {
-      console.log('Deleting item with id:', id);
+      console.log('Archiving item with id:', id);
       const response = await fetch(`/api/items?id=${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) alert('Failed to delete item. Please try again.');
+      if (!response.ok) {
+        alert('Failed to archive item. Please try again.');
+        return;
+      }
+      if (editingId === id) cancelEdit();
       fetchItems(); // This will now also update the categories list
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Error archiving item:', error);
     }
   };
 
@@ -549,10 +553,10 @@ function ItemsPageContent({
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => handleArchive(item.id)}
                                 className="text-red-600 hover:text-red-800 font-medium"
                               >
-                                Delete
+                                Archive
                               </button>
                             </div>
                           </td>

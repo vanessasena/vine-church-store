@@ -12,6 +12,11 @@ This folder contains SQL migration scripts for the Vine Church Store database.
 
 ## Available Migrations
 
+### 002_add_is_archived_to_items.sql
+- **Description**: Adds `is_archived` to `items`, defaulting to false for existing and new items. Run this migration before deploying archive support to an existing database; new databases include it in `database-setup.sql`.
+- **Usage**: Archive hides an item from Items Management and order item selection without deleting it or its order history. Active/Inactive remains a separate, reversible availability setting.
+- **Note**: Safe to run multiple times; existing items and order relationships are preserved.
+
 ### 001_add_subcategory_to_items.sql
 - **Description**: Adds the optional `subcategory` text column to `items`. Run this migration before deploying subcategory support to an existing database; new databases include it in `database-setup.sql`.
 - **Usage**: In Items Management, enter a subcategory (e.g., Snack, Beverage, Lunch) or reuse a suggestion from the selected category. Leave it blank to clear it. New and edited orders group items by category and subcategory, with unassigned items under "Other", plus search and touch-friendly group filters.
