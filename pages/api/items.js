@@ -24,10 +24,14 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { name, category_id, price, has_custom_price, image_url, is_active } = req.body;
+        const { name, category_id, subcategory, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!name || !category_id) {
           return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (subcategory != null && typeof subcategory !== 'string') {
+          return res.status(400).json({ error: 'Subcategory must be text' });
         }
 
         // Validate that if has_custom_price is false, price must be provided
@@ -40,6 +44,7 @@ export default async function handler(req, res) {
           .insert([{ 
             name, 
             category_id, 
+            subcategory: subcategory?.trim() || null,
             price: has_custom_price ? null : price, 
             has_custom_price: has_custom_price || false, 
             image_url: image_url || null,
@@ -59,16 +64,21 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, name, category_id, price, has_custom_price, image_url, is_active } = req.body;
+        const { id, name, category_id, subcategory, price, has_custom_price, image_url, is_active } = req.body;
 
         if (!id) {
           return res.status(400).json({ error: 'Item ID is required' });
+        }
+
+        if (subcategory != null && typeof subcategory !== 'string') {
+          return res.status(400).json({ error: 'Subcategory must be text' });
         }
 
         // Check if this is a simple is_active toggle (only id and is_active provided)
         const isActiveToggleOnly = is_active !== undefined && 
           name === undefined && 
           category_id === undefined && 
+          subcategory === undefined &&
           price === undefined && 
           has_custom_price === undefined && 
           image_url === undefined;
@@ -90,6 +100,7 @@ export default async function handler(req, res) {
         if (!isActiveToggleOnly) {
           if (name !== undefined) updateData.name = name;
           if (category_id !== undefined) updateData.category_id = category_id;
+          if (subcategory !== undefined) updateData.subcategory = subcategory?.trim() || null;
           if (price !== undefined || has_custom_price !== undefined) {
             updateData.price = has_custom_price ? null : price;
             updateData.has_custom_price = has_custom_price || false;

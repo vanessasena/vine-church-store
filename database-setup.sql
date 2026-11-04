@@ -13,6 +13,7 @@ CREATE TABLE items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   category_id UUID NOT NULL REFERENCES categories(id),
+  subcategory TEXT,
   price DECIMAL(10, 2),
   has_custom_price BOOLEAN DEFAULT FALSE,
   image_url TEXT,
@@ -94,4 +95,3 @@ CREATE POLICY "Authenticated users can manage order_items" ON order_items FOR AL
 -- Allow anonymous access to categories and items for read-only (for the order page)
 CREATE POLICY "Anonymous users can read categories" ON categories FOR SELECT TO anon USING (true);
 CREATE POLICY "Anonymous users can read items" ON items FOR SELECT TO anon USING (true);
-
