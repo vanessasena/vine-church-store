@@ -289,6 +289,16 @@ function ItemsPageContent({
   const activeItemsCount = filteredItems.filter(item => item.is_active).length;
   const inactiveItemsCount = filteredItems.length - activeItemsCount;
   const visibleItems = filteredItems.filter(item => Boolean(item.is_active) === (selectedStatus === 'active'));
+  const groupedItems = visibleItems.reduce((groups, item) => {
+    const subcategory = item.subcategory?.trim() || null;
+    groups.set(subcategory, [...(groups.get(subcategory) || []), item]);
+    return groups;
+  }, new Map<string | null, Item[]>());
+  const itemGroups = Array.from(groupedItems.entries()).sort(([a], [b]) => {
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return a.localeCompare(b);
+  });
 
   // Reset category filter if selected category no longer exists
   useEffect(() => {
@@ -536,56 +546,65 @@ function ItemsPageContent({
                     : `No ${selectedStatus} items found.`}
                 </p>
               ) : (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {visibleItems.map(item => (
-                    <article key={item.id} className="min-w-0 rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-start gap-3">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-md border border-gray-200 object-cover" />
-                        ) : (
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500">
-                            No image
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <h3 className="break-words font-semibold text-gray-900">{item.name}</h3>
-                          <p className="mt-1 text-sm text-gray-600">
-                            {item.category?.name || 'Unknown'}
-                            {item.subcategory && ` · ${item.subcategory}`}
-                          </p>
-                          <p className="mt-2 font-medium text-gray-900">
-                            {item.has_custom_price ? 'Custom price' : `$${item.price?.toFixed(2) || '0.00'}`}
-                          </p>
-                        </div>
+                <div className="mt-5 space-y-6">
+                  {itemGroups.map(([subcategory, subcategoryItems], index) => (
+                    <section key={subcategory ?? 'uncategorized'} aria-labelledby={`subcategory-heading-${index}`}>
+                      <h3
+                        id={`subcategory-heading-${index}`}
+                        className="mb-3 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-800"
+                      >
+                        {subcategory || 'Other items'}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {subcategoryItems.map(item => (
+                          <article key={item.id} className="min-w-0 rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-start gap-3">
+                              {item.image_url ? (
+                                <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-md border border-gray-200 object-cover" />
+                              ) : (
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-500">
+                                  No image
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h4 className="break-words font-semibold text-gray-900">{item.name}</h4>
+                                <p className="mt-1 text-sm text-gray-600">{item.category?.name || 'Unknown'}</p>
+                                <p className="mt-2 font-medium text-gray-900">
+                                  {item.has_custom_price ? 'Custom price' : `$${item.price?.toFixed(2) || '0.00'}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-3 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleActive(item.id, item.is_active)}
+                                className={`min-h-11 rounded-md px-2 text-sm font-medium ${
+                                  item.is_active
+                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }`}
+                              >
+                                {item.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(item)}
+                                className="min-h-11 rounded-md bg-blue-50 px-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleArchive(item.id)}
+                                className="min-h-11 rounded-md bg-red-50 px-2 text-sm font-medium text-red-700 hover:bg-red-100"
+                              >
+                                Archive
+                              </button>
+                            </div>
+                          </article>
+                        ))}
                       </div>
-                      <div className="mt-4 grid grid-cols-3 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleActive(item.id, item.is_active)}
-                          className={`min-h-11 rounded-md px-2 text-sm font-medium ${
-                            item.is_active
-                              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          }`}
-                        >
-                          {item.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(item)}
-                          className="min-h-11 rounded-md bg-blue-50 px-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleArchive(item.id)}
-                          className="min-h-11 rounded-md bg-red-50 px-2 text-sm font-medium text-red-700 hover:bg-red-100"
-                        >
-                          Archive
-                        </button>
-                      </div>
-                    </article>
+                    </section>
                   ))}
                 </div>
               )}
