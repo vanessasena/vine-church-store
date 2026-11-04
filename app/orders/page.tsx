@@ -667,6 +667,7 @@ function OrdersPageContent() {
                   items={getFilteredItems()}
                   onSelect={addToCart}
                   clickedItemId={clickedItemId}
+                  preferredCategory={pageCategory || selectedCategory}
                 />
               </div>
 
@@ -1244,6 +1245,7 @@ function OrdersPageContent() {
                     items={getFilteredItems()}
                     onSelect={addToEditCart}
                     clickedItemId={clickedEditItemId}
+                    preferredCategory={pageCategory || selectedCategory}
                     scrollable
                   />
                 </div>
