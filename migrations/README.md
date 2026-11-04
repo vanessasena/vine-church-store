@@ -12,6 +12,11 @@ This folder contains SQL migration scripts for the Vine Church Store database.
 
 ## Available Migrations
 
+### 001_add_subcategory_to_items.sql
+- **Description**: Adds the optional `subcategory` text column to `items`. Run this migration before deploying subcategory support to an existing database; new databases include it in `database-setup.sql`.
+- **Usage**: In Items Management, enter a subcategory (e.g., Snack, Beverage, Lunch) or reuse a suggestion from the selected category. Leave it blank to clear it. New and edited orders group items by category and subcategory, with unassigned items under "Other", plus search and touch-friendly group filters.
+- **Note**: Safe to run multiple times; existing items are preserved.
+
 ### add_image_url_to_items.sql
 - **Date**: 2025-11-05
 - **Description**: Adds the `image_url` column to the `items` table to support item images stored in Supabase storage

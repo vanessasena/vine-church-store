@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
+  const [formData, setFormData] = useState({ name: '', category: '', categoryId: '', subcategory: '', price: '', hasCustomPrice: false, imageUrl: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -176,6 +176,7 @@ function ItemsPageContent({
     const itemData = {
       name: formData.name,
       category_id: formData.categoryId,
+      subcategory: formData.subcategory.trim() || null,
       price: formData.hasCustomPrice ? null : parseFloat(formData.price),
       has_custom_price: formData.hasCustomPrice,
       image_url: imageUrl,
@@ -203,7 +204,7 @@ function ItemsPageContent({
         });
       }
 
-      setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
+      setFormData({ name: '', category: '', categoryId: '', subcategory: '', price: '', hasCustomPrice: false, imageUrl: '' });
       setImageFile(null);
       setImagePreview('');
       fetchItems(); // This will now also update the categories list
@@ -217,6 +218,7 @@ function ItemsPageContent({
       name: item.name,
       category: item.category?.name || '',
       categoryId: item.category_id,
+      subcategory: item.subcategory || '',
       price: item.price?.toString() || '',
       hasCustomPrice: item.has_custom_price || false,
       imageUrl: item.image_url || '',
@@ -260,7 +262,7 @@ function ItemsPageContent({
   const cancelEdit = () => {
     setEditingId(null);
     setEditingItem(null);
-    setFormData({ name: '', category: '', categoryId: '', price: '', hasCustomPrice: false, imageUrl: '' });
+    setFormData({ name: '', category: '', categoryId: '', subcategory: '', price: '', hasCustomPrice: false, imageUrl: '' });
     setImageFile(null);
     setImagePreview('');
   };
@@ -329,12 +331,36 @@ function ItemsPageContent({
                     onChange={(value, categoryId) => setFormData({
                       ...formData,
                       category: value,
-                      categoryId: categoryId || ''
+                      categoryId: categoryId || '',
+                      subcategory: categoryId === formData.categoryId ? formData.subcategory : ''
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Beverages"
                     required
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="item-subcategory" className="block text-sm font-medium text-gray-700 mb-1">
+                    Subcategory (optional)
+                  </label>
+                  <input
+                    id="item-subcategory"
+                    type="text"
+                    list="item-subcategories"
+                    value={formData.subcategory}
+                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                    className="w-full min-h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Snack, Beverage, Lunch"
+                  />
+                  <datalist id="item-subcategories">
+                    {Array.from(new Set(items
+                      .filter(item => item.category_id === formData.categoryId && item.subcategory)
+                      .map(item => item.subcategory!.trim())
+                      .filter(Boolean)))
+                      .sort((a, b) => a.localeCompare(b))
+                      .map(subcategory => <option key={subcategory} value={subcategory} />)}
+                  </datalist>
                 </div>
 
                 <div>
@@ -482,6 +508,9 @@ function ItemsPageContent({
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
                               {item.category?.name || 'Unknown'}
                             </span>
+                            {item.subcategory && (
+                              <div className="text-sm text-gray-600 mt-1">{item.subcategory}</div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             {item.has_custom_price ? (

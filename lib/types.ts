@@ -8,6 +8,7 @@ export interface Item {
   id: string;
   name: string;
   category_id: string;
+  subcategory?: string | null;
   price: number | null;
   has_custom_price: boolean;
   image_url?: string | null;
