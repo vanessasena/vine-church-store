@@ -329,7 +329,7 @@ function ItemsPageContent({
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-8">
           {/* Form Section */}
-          <div className="order-2 lg:order-1 lg:col-span-1">
+          <div className="order-1 lg:col-span-1">
             <div className="rounded-lg bg-white shadow-md">
               <div className="flex items-center justify-between p-4 sm:p-6 lg:pb-0">
                 <h2 className="text-xl font-semibold sm:text-2xl">
@@ -479,7 +479,7 @@ function ItemsPageContent({
           </div>
 
           {/* Items List Section */}
-          <div className="order-1 lg:order-2 lg:col-span-2">
+          <div className="order-2 lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               <div className="mb-5">
                 <h2 className="text-xl font-semibold sm:text-2xl">Items List</h2>
