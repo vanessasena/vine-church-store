@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Item, Order } from '@/lib/types';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
+import ItemPicker from '@/app/components/ItemPicker';
 
 interface CartItem extends Omit<Item, 'category'> {
   quantity: number;
@@ -639,7 +640,7 @@ function OrdersPageContent() {
                           key={category}
                           type="button"
                           onClick={() => setSelectedCategory(category)}
-                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          className={`min-h-11 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                             selectedCategory === category
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -652,7 +653,7 @@ function OrdersPageContent() {
                         <button
                           type="button"
                           onClick={() => setSelectedCategory('')}
-                          className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          className="min-h-11 px-3 py-2 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
                         >
                           Clear Filter
                         </button>
@@ -661,47 +662,12 @@ function OrdersPageContent() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {getFilteredItems().map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => addToCart(item)}
-                      className={`p-3 border rounded-md transition-all text-left ${
-                        clickedItemId === item.id
-                          ? 'bg-green-100 border-green-500 scale-95 shadow-inner'
-                          : 'border-gray-300 hover:bg-blue-50 hover:border-blue-500'
-                      }`}
-                    >
-                      {item.image_url && (
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-24 object-cover rounded-md mb-2"
-                        />
-                      )}
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
-                      <div className="text-sm font-semibold text-green-600">
-                        {item.has_custom_price ? (
-                          <span className="text-purple-600">Custom Price</span>
-                        ) : (
-                          `$${item.price?.toFixed(2) || '0.00'}`
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                {getFilteredItems().length === 0 && items.length > 0 && (
-                  <p className="text-gray-500 text-center py-4">
-                    No items found in this category.
-                  </p>
-                )}
-                {items.length === 0 && (
-                  <p className="text-gray-500 text-center py-4">
-                    No items available. Please add items first.
-                  </p>
-                )}
+                <ItemPicker
+                  key={pageCategory || selectedCategory}
+                  items={getFilteredItems()}
+                  onSelect={addToCart}
+                  clickedItemId={clickedItemId}
+                />
               </div>
 
               {cart.length > 0 && (
@@ -1227,8 +1193,8 @@ function OrdersPageContent() {
 
         {/* Edit Order Modal */}
         {showEditOrder && editingOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 my-8">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full min-w-0 mx-4 my-8">
               <h2 className="text-2xl font-semibold mb-4">Edit Order - {editingOrder.customer_name}</h2>
               <form onSubmit={handleUpdateOrder}>
                 <div className="mb-4">
@@ -1251,7 +1217,7 @@ function OrdersPageContent() {
                             key={category}
                             type="button"
                             onClick={() => setSelectedCategory(category)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            className={`min-h-11 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                               selectedCategory === category
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -1264,7 +1230,7 @@ function OrdersPageContent() {
                           <button
                             type="button"
                             onClick={() => setSelectedCategory('')}
-                            className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                            className="min-h-11 px-3 py-2 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
                           >
                             Clear Filter
                           </button>
@@ -1273,42 +1239,13 @@ function OrdersPageContent() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
-                    {getFilteredItems().map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => addToEditCart(item)}
-                        className={`p-3 border rounded-md transition-all text-left ${
-                          clickedEditItemId === item.id
-                            ? 'bg-green-100 border-green-500 scale-95 shadow-inner'
-                            : 'border-gray-300 hover:bg-blue-50 hover:border-blue-500'
-                        }`}
-                      >
-                        {item.image_url && (
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-full h-24 object-cover rounded-md mb-2"
-                          />
-                        )}
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-600">{item.category?.name || 'Unknown'}</div>
-                        <div className="text-sm font-semibold text-green-600">
-                          {item.has_custom_price ? (
-                            <span className="text-purple-600">Custom Price</span>
-                          ) : (
-                            `$${item.price?.toFixed(2) || '0.00'}`
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  {getFilteredItems().length === 0 && items.length > 0 && (
-                    <p className="text-gray-500 text-center py-4">
-                      No items found in this category.
-                    </p>
-                  )}
+                  <ItemPicker
+                    key={pageCategory || selectedCategory}
+                    items={getFilteredItems()}
+                    onSelect={addToEditCart}
+                    clickedItemId={clickedEditItemId}
+                    scrollable
+                  />
                 </div>
 
                 {editCart.length > 0 && (
