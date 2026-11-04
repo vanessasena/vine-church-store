@@ -7,14 +7,20 @@ interface ItemPickerProps {
   items: Item[];
   onSelect: (item: Item) => void;
   clickedItemId: string | null;
+  preferredCategory?: string;
   scrollable?: boolean;
 }
 
-export default function ItemPicker({ items, onSelect, clickedItemId, scrollable = false }: ItemPickerProps) {
+export default function ItemPicker({ items, onSelect, clickedItemId, preferredCategory, scrollable = false }: ItemPickerProps) {
   const searchId = useId();
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
   const groups = new Map<string, { category: string; subcategory: string; items: Item[] }>();
+  const normalizeCategory = (category: string) => category
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .trim();
 
   for (const item of items) {
     const category = item.category?.name || 'Unknown';
@@ -28,10 +34,19 @@ export default function ItemPicker({ items, onSelect, clickedItemId, scrollable 
     }
   }
 
-  const sortedGroups = Array.from(groups.entries()).sort(([, a], [, b]) =>
-    a.category.localeCompare(b.category) ||
-    (a.subcategory ? (b.subcategory ? a.subcategory.localeCompare(b.subcategory) : -1) : (b.subcategory ? 1 : 0))
-  );
+  const sortedGroups = Array.from(groups.entries()).sort(([, a], [, b]) => {
+    const aIsDonation = normalizeCategory(a.category) === 'doacao';
+    const bIsDonation = normalizeCategory(b.category) === 'doacao';
+    if (aIsDonation !== bIsDonation) return aIsDonation ? 1 : -1;
+
+    const normalizedPreferred = preferredCategory ? normalizeCategory(preferredCategory) : '';
+    const aIsPreferred = normalizedPreferred !== '' && normalizeCategory(a.category) === normalizedPreferred;
+    const bIsPreferred = normalizedPreferred !== '' && normalizeCategory(b.category) === normalizedPreferred;
+    if (aIsPreferred !== bIsPreferred) return aIsPreferred ? -1 : 1;
+
+    return a.category.localeCompare(b.category) ||
+      (a.subcategory ? (b.subcategory ? a.subcategory.localeCompare(b.subcategory) : -1) : (b.subcategory ? 1 : 0));
+  });
   const activeGroup = groups.has(selectedGroup) ? selectedGroup : '';
   const query = search.trim().toLocaleLowerCase();
   const visibleGroups = sortedGroups
