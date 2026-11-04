@@ -13,6 +13,7 @@ export interface Item {
   has_custom_price: boolean;
   image_url?: string | null;
   is_active: boolean;
+  is_archived?: boolean;
   created_at?: string;
   category?: Category;
 }

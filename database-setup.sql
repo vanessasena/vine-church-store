@@ -18,6 +18,7 @@ CREATE TABLE items (
   has_custom_price BOOLEAN DEFAULT FALSE,
   image_url TEXT,
   is_active BOOLEAN DEFAULT TRUE,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
