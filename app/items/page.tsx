@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Item } from '@/lib/types';
 import CategoryAutocomplete from '@/app/components/CategoryAutocomplete';
+import SubcategoryAutocomplete from '@/app/components/SubcategoryAutocomplete';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
 
@@ -385,23 +386,14 @@ function ItemsPageContent({
                   <label htmlFor="item-subcategory" className="block text-sm font-medium text-gray-700 mb-1">
                     Subcategory (optional)
                   </label>
-                  <input
-                    id="item-subcategory"
-                    type="text"
-                    list="item-subcategories"
+                  <SubcategoryAutocomplete
+                    categoryId={formData.categoryId}
+                    items={items}
                     value={formData.subcategory}
-                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                    onChange={value => setFormData({ ...formData, subcategory: value })}
                     className="w-full min-h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Snack, Beverage, Lunch"
                   />
-                  <datalist id="item-subcategories">
-                    {Array.from(new Set(items
-                      .filter(item => item.category_id === formData.categoryId && item.subcategory)
-                      .map(item => item.subcategory!.trim())
-                      .filter(Boolean)))
-                      .sort((a, b) => a.localeCompare(b))
-                      .map(subcategory => <option key={subcategory} value={subcategory} />)}
-                  </datalist>
                 </div>
 
                 <div>
